@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="vi">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>HBC AI Assistant</title>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+        <link rel="stylesheet" href="styles.css" />
+        <link rel="icon" href="logo-HBC.png" />
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css"
+        />
+        <script>
+            // Khai báo endpoint API
+            const API_ENDPOINTS = {
+                CHAT_API: "https://n8nai.hbc.com.vn/webhook/hcns",
+                CHECK_TOKEN: "/v1/user/auth/google/access-token",
+            };
+        </script>
+    </head>
+    <body>
+        <div class="app-container">
+            <!-- Sidebar - Danh sách hội thoại -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div class="company-logo">
+                        <img src="logo-HBC.png" alt="HBC Logo" />
+                    </div>
+                    <button id="new-chat-btn" class="new-chat-btn">
+                        <i class="fas fa-plus"></i> Hội thoại mới
+                    </button>
+                </div>
+                <div class="conversations-list" id="conversations-list">
+                    <div class="conversation-item active" data-id="1">
+                        <i class="fas fa-comment-alt"></i>
+                        <span class="conversation-name"
+                            >Hội thoại hiện tại</span
+                        >
+                        <div class="conversation-actions">
+                            <button class="edit-name-btn" title="Chỉnh sửa tên">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button
+                                class="delete-chat-btn"
+                                title="Xóa hội thoại"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="conversation-item" data-id="2">
+                        <i class="fas fa-comment-alt"></i>
+                        <span class="conversation-name"
+                            >Hỏi đáp về JavaScript</span
+                        >
+                        <div class="conversation-actions">
+                            <button class="edit-name-btn" title="Chỉnh sửa tên">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button
+                                class="delete-chat-btn"
+                                title="Xóa hội thoại"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="conversation-item" data-id="3">
+                        <i class="fas fa-comment-alt"></i>
+                        <span class="conversation-name"
+                            >Thông tin thời tiết</span
+                        >
+                        <div class="conversation-actions">
+                            <button class="edit-name-btn" title="Chỉnh sửa tên">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button
+                                class="delete-chat-btn"
+                                title="Xóa hội thoại"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sidebar-footer"></div>
+            </div>
+
+            <!-- Nội dung chính -->
+            <div class="main-content">
+                <!-- Header -->
+                <div class="main-header">
+                    <button id="toggle-sidebar" class="toggle-sidebar-btn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="main-title">Chat Bot</div>
+                    <div class="user-menu-container">
+                        <div class="user-actions">
+                            <button
+                                id="clear-chat"
+                                title="Xóa cuộc trò chuyện hiện tại"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button id="settings-btn" title="Cài đặt">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
+                        <div class="user-avatar" id="user-avatar">
+                            <img
+                                src="https://ui-avatars.com/api/?name=User&background=3498db&color=fff"
+                                alt="User Avatar"
+                            />
+                        </div>
+                        <div class="user-dropdown" id="user-dropdown">
+                            <div class="user-info">
+                                <img
+                                    src="https://ui-avatars.com/api/?name=User&background=3498db&color=fff"
+                                    alt="User Avatar"
+                                />
+                                <div class="user-details">
+                                    <div class="user-name">Người dùng</div>
+                                    <div class="user-email">
+                                        user@example.com
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dropdown-menu">
+                                <a
+                                    href="#"
+                                    class="dropdown-item"
+                                    id="logout-btn"
+                                >
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    Đăng xuất
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Khu vực chat -->
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-welcome">
+                            <h1>HBC AI Assistant</h1>
+                            <div class="welcome-suggestions">
+                                <div class="suggestion-row">
+                                    <div class="suggestion-card">
+                                        <div class="suggestion-title">
+                                            <i class="fas fa-code"></i> Lập
+                                            trình
+                                        </div>
+                                        <div class="suggestion-examples">
+                                            <p>
+                                                "Giải thích về JavaScript
+                                                Promise"
+                                            </p>
+                                            <p>
+                                                "Viết code kiểm tra số nguyên
+                                                tố"
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="suggestion-card">
+                                        <div class="suggestion-title">
+                                            <i
+                                                class="fas fa-graduation-cap"
+                                            ></i>
+                                            Học tập
+                                        </div>
+                                        <div class="suggestion-examples">
+                                            <p>"Giải phương trình bậc 2"</p>
+                                            <p>
+                                                "Lịch sử Việt Nam thời kỳ nào?"
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="suggestion-row">
+                                    <div class="suggestion-card">
+                                        <div class="suggestion-title">
+                                            <i class="fas fa-lightbulb"></i> Ý
+                                            tưởng
+                                        </div>
+                                        <div class="suggestion-examples">
+                                            <p>"Đề xuất ý tưởng startup"</p>
+                                            <p>
+                                                "Các chủ đề nghiên cứu về IoT"
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="suggestion-card">
+                                        <div class="suggestion-title">
+                                            <i class="fas fa-comments"></i> Trò
+                                            chuyện
+                                        </div>
+                                        <div class="suggestion-examples">
+                                            <p>"Kể cho tôi một câu chuyện"</p>
+                                            <p>"Nói về thời tiết hôm nay"</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tin nhắn sẽ được thêm vào đây bằng JavaScript -->
+                    </div>
+
+                    <div class="chat-input-wrapper">
+                        <div class="chat-input-container">
+                            <div class="chat-tools">
+                                <button id="upload-btn" title="Tải lên file">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                            </div>
+                            <textarea
+                                id="user-input"
+                                placeholder="Nhập tin nhắn của bạn..."
+                                rows="1"
+                            ></textarea>
+                            <button id="send-btn" title="Gửi tin nhắn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="chat-footer">
+                            <!-- <p>Nếu gặp lỗi gì, hãy liên hệ bộ phận IT.</p> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel cài đặt -->
+            <div class="settings-panel" id="settings-panel">
+                <div class="settings-header">
+                    <h3>Cài đặt</h3>
+                    <button id="close-settings">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="settings-content">
+                    <div class="setting-group">
+                        <h4>Hiển thị</h4>
+                        <div class="setting-item">
+                            <span>Chế độ tối</span>
+                            <label class="switch">
+                                <input type="checkbox" id="dark-mode-toggle" />
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <span>Kích thước font</span>
+                            <select id="font-size">
+                                <option value="small">Nhỏ</option>
+                                <option value="medium" selected>Vừa</option>
+                                <option value="large">Lớn</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <h4>Tùy chọn bot</h4>
+                        <div class="setting-item">
+                            <span>Hiện đánh giá tin nhắn</span>
+                            <label class="switch">
+                                <input type="checkbox" id="rating-toggle" />
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <h4>Lịch sử</h4>
+                        <button id="export-chat" class="btn-secondary">
+                            Xuất lịch sử trò chuyện
+                        </button>
+                        <button id="clear-history" class="btn-danger">
+                            Xóa lịch sử
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="script.js"></script>
+    </body>
+</html>

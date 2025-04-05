@@ -1,0 +1,13 @@
+python-dotenv
+openai
+qdrant-client
+tqdm
+PyMuPDF
+pdf2image
+pytesseract
+pypdfium2
+pathlib
+python-dateutil
+regex
+requests
+psycopg2-binary

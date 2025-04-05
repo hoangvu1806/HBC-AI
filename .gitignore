@@ -1,0 +1,110 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.env
+.venv
+env.bak/
+venv.bak/
+.python-version
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor and IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Database
+*.sqlite3
+*.db
+
+# Frontend
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.js
+frontend/coverage/
+frontend/build/
+frontend/.DS_Store
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Server specific
+server/__pycache__/
+server/*.pyc
+server/.env
+
+# Data and model files
+data/**/*.txt
+data/**/*.pdf
+data/**/*.doc
+data/**/*.docx
+data/**/*.xls
+data/**/*.xlsx
+data/**/*.csv
+embedding/models/
+*.bin
+*.vec
+*.pt
+*.pth
+*.pkl
+*.h5
+*.hdf5
+*.npy
+*.npz
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Cursor
+.cursor/
+
+# Misc
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+*.cover 
