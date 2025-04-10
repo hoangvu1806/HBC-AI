@@ -811,7 +811,159 @@ body {
 }
 
 .chat-tools button:hover {
-    color: var(--primary-color);
+    background-color: var(--hover-color);
+}
+
+.think-toggle-btn {
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.65) !important;
+    color: #ffffff !important;
+    border-radius: 20px !important;
+    padding: 6px 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 14px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(0, 0, 0, 0.2) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    overflow: hidden !important;
+}
+
+.think-toggle-btn .ripple {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+    pointer-events: none;
+}
+
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+.think-toggle-btn i {
+    transition: all 0.3s ease !important;
+}
+
+.think-toggle-btn span {
+    font-weight: 500;
+}
+
+.think-toggle-btn:hover {
+    background-color: rgba(0, 0, 0, 0.75) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-1px) !important;
+}
+
+.think-toggle-btn.active {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.4) !important;
+    position: relative !important;
+}
+
+.think-toggle-btn.active::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 25px;
+    background: linear-gradient(
+        45deg,
+        rgba(var(--primary-rgb), 0.5),
+        rgba(var(--primary-rgb), 0),
+        rgba(var(--primary-rgb), 0.5)
+    );
+    z-index: -1;
+    animation: rotate-border 3s linear infinite;
+}
+
+@keyframes rotate-border {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.think-toggle-btn.active i {
+    color: #ffea80 !important;
+    text-shadow: 0 0 10px rgba(255, 234, 128, 0.8) !important;
+    animation: pulse-light 2s infinite !important;
+}
+
+.think-toggle-btn.active:hover {
+    background-color: var(--primary-hover) !important;
+    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.3) !important;
+}
+
+.think-toggle-btn.active:hover i {
+    animation: pulse-light-fast 1s infinite !important;
+    color: #fff700 !important;
+    text-shadow: 0 0 12px rgba(255, 247, 0, 0.9) !important;
+}
+
+@keyframes pulse-light {
+    0% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.15);
+    }
+    100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse-light-fast {
+    0% {
+        opacity: 0.9;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.25);
+    }
+    100% {
+        opacity: 0.9;
+        transform: scale(1);
+    }
+}
+
+/* Loại bỏ hiệu ứng điểm tròn cũ */
+.think-toggle-btn::after {
+    content: none;
+}
+
+body.dark-mode .think-toggle-btn {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .think-toggle-btn:hover {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+body.dark-mode .think-toggle-btn.active {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.5) !important;
 }
 
 textarea {

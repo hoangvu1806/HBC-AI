@@ -42,8 +42,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const exportChatBtn = document.getElementById("export-chat");
     const clearHistoryBtn = document.getElementById("clear-history");
     const uploadBtn = document.getElementById("upload-btn");
-
     const ratingToggle = document.getElementById("rating-toggle");
+    const thinkToggleBtn = document.getElementById("think-toggle-btn");
 
     // Các phần tử mới trong giao diện ChatGPT style
     const toggleSidebarBtn = document.getElementById("toggle-sidebar");
@@ -58,6 +58,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Thêm biến kiểm soát tính năng đánh giá
     let showRatings = localStorage.getItem("showRatings") === "true";
+
+    // Thêm biến kiểm soát chế độ Think
+    let thinkEnabled = localStorage.getItem("thinkEnabled") === "true";
 
     // Khai báo biến lưu đánh giá
     let messageRatings = {};
@@ -424,25 +427,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Lấy thông tin người dùng từ localStorage
             const userData = localStorage.getItem("user");
-            let userEmail = "";
+            let userEmail = "guest";
             if (userData) {
                 const user = JSON.parse(userData);
-                userEmail = user.emailAddress || "";
+                userEmail = user.emailAddress || "guest";
             }
 
             // Chuẩn bị dữ liệu gửi đi
             const formData = new FormData();
             formData.append("topic", currentTopic);
+            formData.append("user_email", userEmail);
             formData.append("prompt", message);
-            formData.append("section_name", `${userEmail}/${sectionName}`);
-
+            formData.append("section_name", sectionName);
+            formData.append("mode", thinkEnabled ? "think" : "normal");
             // Thêm files nếu có
             if (files && files.length > 0) {
                 files.forEach((file, index) => {
                     formData.append(`files`, file);
                 });
             }
-
+            console.log("formData: ", formData);
             // Gửi yêu cầu đến API và đọc phản hồi thực tế
             const response = await fetch(apiUrl, {
                 method: "POST",
@@ -1637,29 +1641,38 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Khôi phục cài đặt từ localStorage
     function restoreSettings() {
-        // Khôi phục chế độ tối
+        // Khôi phục cài đặt chế độ tối
         const darkMode = localStorage.getItem("darkMode") === "true";
-        document.body.classList.toggle("dark-mode", darkMode);
-        if (darkModeToggle) {
-            darkModeToggle.checked = darkMode;
+        if (darkMode) {
+            document.body.classList.add("dark-mode");
+            darkModeToggle.checked = true;
         }
 
         // Khôi phục kích thước font
         const fontSize = localStorage.getItem("fontSize") || "medium";
         fontSizeSelect.value = fontSize;
-        document.documentElement.style.setProperty(
-            "--font-size-medium",
-            fontSize === "small"
-                ? "14px"
-                : fontSize === "large"
-                ? "18px"
-                : "16px"
+        document.documentElement.classList.remove(
+            "font-small",
+            "font-medium",
+            "font-large"
         );
+        document.documentElement.classList.add(`font-${fontSize}`);
 
-        // Khôi phục trạng thái hiển thị đánh giá
-        if (ratingToggle) {
-            ratingToggle.checked = showRatings;
+        // Khôi phục cài đặt đánh giá
+        const showRatingsSetting = localStorage.getItem("showRatings");
+        showRatings = showRatingsSetting === "true";
+        ratingToggle.checked = showRatings;
+
+        // Khôi phục trạng thái Think
+        const thinkSetting = localStorage.getItem("thinkEnabled");
+        thinkEnabled = thinkSetting === "true";
+        if (thinkEnabled) {
+            thinkToggleBtn.classList.add("active");
+        } else {
+            thinkToggleBtn.classList.remove("active");
         }
+
+        updateRatingDisplay();
     }
 
     // Dark mode toggle in settings
@@ -1946,5 +1959,117 @@ document.addEventListener("DOMContentLoaded", function () {
             reader.onerror = (error) => reject(error);
             reader.readAsDataURL(file);
         });
+    }
+
+    // Xử lý nút Think
+    if (thinkToggleBtn) {
+        thinkToggleBtn.addEventListener("click", function (e) {
+            // Tạo hiệu ứng ripple
+            const ripple = document.createElement("span");
+            ripple.classList.add("ripple");
+            this.appendChild(ripple);
+
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = ripple.style.height = size + "px";
+            ripple.style.left = e.clientX - rect.left - size / 2 + "px";
+            ripple.style.top = e.clientY - rect.top - size / 2 + "px";
+
+            // Xóa hiệu ứng sau khi hoàn thành animation
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+
+            // Thay đổi trạng thái think
+            thinkEnabled = !thinkEnabled;
+            localStorage.setItem("thinkEnabled", thinkEnabled);
+            thinkToggleBtn.classList.toggle("active", thinkEnabled);
+
+            // Thông báo trạng thái
+            const toastMessage = thinkEnabled
+                ? "Đã bật chế độ Think: AI sẽ hiển thị quá trình suy nghĩ"
+                : "Đã tắt chế độ Think: AI sẽ chỉ hiển thị kết quả cuối cùng";
+            showToast(toastMessage, thinkEnabled ? "success" : "info");
+        });
+    }
+
+    function showToast(message, type = "info", duration = 3000) {
+        // Kiểm tra xem đã có toast container chưa
+        let toastContainer = document.querySelector(".toast-container");
+
+        if (!toastContainer) {
+            toastContainer = document.createElement("div");
+            toastContainer.className = "toast-container";
+            document.body.appendChild(toastContainer);
+
+            // Thêm CSS cho toast container nếu chưa có
+            const style = document.createElement("style");
+            style.textContent = `
+                .toast-container {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                }
+                .toast {
+                    padding: 12px 20px;
+                    margin-bottom: 10px;
+                    border-radius: 8px;
+                    color: white;
+                    font-size: 14px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    display: flex;
+                    align-items: center;
+                    animation: slideIn 0.3s, fadeOut 0.5s ${
+                        duration / 1000 - 0.5
+                    }s forwards;
+                    max-width: 320px;
+                    backdrop-filter: blur(10px);
+                }
+                .toast i {
+                    margin-right: 10px;
+                    font-size: 16px;
+                }
+                .toast.success {
+                    background-color: rgba(16, 163, 127, 0.95);
+                }
+                .toast.error {
+                    background-color: rgba(244, 67, 54, 0.95);
+                }
+                .toast.warning {
+                    background-color: rgba(255, 152, 0, 0.95);
+                }
+                .toast.info {
+                    background-color: rgba(33, 150, 243, 0.95);
+                }
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Tạo toast
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+
+        // Icon dựa vào loại toast
+        let icon = "info-circle";
+        if (type === "success") icon = "check-circle";
+        if (type === "error") icon = "exclamation-circle";
+        if (type === "warning") icon = "exclamation-triangle";
+
+        toast.innerHTML = `<i class="fas fa-${icon}"></i>${message}`;
+        toastContainer.appendChild(toast);
+
+        // Tự động xóa toast sau thời gian định trước
+        setTimeout(() => {
+            toast.remove();
+        }, duration);
     }
 });

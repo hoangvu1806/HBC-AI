@@ -1,0 +1,298 @@
+{
+    "title": "THÔNG TIN LIÊN LẠC NỘI BỘ",
+    "last_updated": "24/10/2024",
+    "hotline_hbc": "0902119538",
+    "departments": [
+        {
+            "department_name": "Ban Lãnh đạo",
+            "members": [
+                {
+                    "full_name": "Lê Quang Cảnh",
+                    "position": "Giám đốc",
+                    "email": "canh.le@hbc.com.vn",
+                    "internal_extension": "021",
+                    "company_phone": "0903802387",
+                    "personal_phone": null,
+                    "summary": "Lê Quang Cảnh là chủ tịch của công ty Cổ Phần Hòa Bình. Email: canh.le@hbc.com.vn, Số nội bộ: 021, SĐT công ty: 0903802387."
+                }
+            ]
+        },
+        {
+            "department_name": "Phòng Mua Hàng",
+            "members": [
+                {
+                    "full_name": "Trần Phương Thảo",
+                    "position": "Giám đốc",
+                    "email": "thao.tran@hbc.com.vn",
+                    "internal_extension": "031",
+                    "company_phone": "0906722244",
+                    "personal_phone": "0357273638",
+                    "summary": "Trần Phương Thảo là Giám đốc Phòng Mua Hàng. Email: thao.tran@hbc.com.vn, Số nội bộ: 031, SĐT công ty: 0906722244, SĐT cá nhân: 0357273638."
+                },
+                {
+                    "full_name": "Trần Hoàng Hương Lan",
+                    "position": "Nhân viên",
+                    "email": "lan.tran@hbc.com.vn",
+                    "internal_extension": "031",
+                    "company_phone": "0902794817",
+                    "personal_phone": "0859008090",
+                    "summary": "Trần Hoàng Hương Lan là Nhân viên Phòng Mua Hàng. Email: lan.tran@hbc.com.vn, Số nội bộ: 031, SĐT công ty: 0902794817, SĐT cá nhân: 0859008090."
+                }
+            ]
+        },
+        {
+            "department_name": "Phòng Kinh Doanh Tiếp Thị",
+            "members": [
+                {
+                    "full_name": "Nguyễn Hoàng Đạo",
+                    "position": "Giám đốc",
+                    "email": "dao.nguyen@hbc.com.vn",
+                    "internal_extension": null,
+                    "company_phone": "0902306388",
+                    "personal_phone": "0932545909",
+                    "summary": "Nguyễn Hoàng Đạo là Giám đốc Phòng Kinh Doanh Tiếp Thị. Email: dao.nguyen@hbc.com.vn, SĐT công ty: 0902306388, SĐT cá nhân: 0932545909."
+                },
+                {
+                    "full_name": "Lê Nguyên Vũ",
+                    "position": "Phó Giám đốc",
+                    "email": "vu.le@hbc.com.vn",
+                    "internal_extension": "011",
+                    "company_phone": "0901434133",
+                    "personal_phone": null,
+                    "summary": "Lê Nguyên Vũ là Phó Giám đốc Phòng Kinh Doanh Tiếp Thị. Email: vu.le@hbc.com.vn, Số nội bộ: 011, SĐT công ty: 0901434133."
+                },
+                {
+                    "full_name": "Trần Văn Mẫn",
+                    "position": "Nhân viên",
+                    "email": "man.tran@hbc.com.vn",
+                    "internal_extension": "012",
+                    "company_phone": "0938383309",
+                    "personal_phone": "0326012664",
+                    "summary": "Trần Văn Mẫn là Nhân viên Phòng Kinh Doanh Tiếp Thị. Email: man.tran@hbc.com.vn, Số nội bộ: 012, SĐT công ty: 0938383309, SĐT cá nhân: 0326012664."
+                },
+                {
+                    "full_name": "Nguyễn Thị Thanh Ngân",
+                    "position": "Nhân viên",
+                    "email": "ngan.nguyen@hbc.com.vn",
+                    "internal_extension": "012",
+                    "company_phone": "0909882958",
+                    "personal_phone": "0365957879",
+                    "summary": "Nguyễn Thị Thanh Ngân là Nhân viên Phòng Kinh Doanh Tiếp Thị. Email: ngan.nguyen@hbc.com.vn, Số nội bộ: 012, SĐT công ty: 0909882958, SĐT cá nhân: 0365957879."
+                },
+                {
+                    "full_name": "Trương Thị Tuyết Mai",
+                    "position": "Nhân viên",
+                    "email": "mai.truong@hbc.com.vn",
+                    "internal_extension": "012",
+                    "company_phone": null,
+                    "personal_phone": "0938002591",
+                    "summary": "Trương Thị Tuyết Mai là Nhân viên Phòng Kinh Doanh Tiếp Thị. Email: mai.truong@hbc.com.vn, Số nội bộ: 012, SĐT cá nhân: 0938002591."
+                },
+                {
+                    "full_name": "Bồ Tường Linh",
+                    "position": "Nhân viên",
+                    "email": "linh.bo@hbc.com.vn",
+                    "internal_extension": "012",
+                    "company_phone": "0908352498",
+                    "personal_phone": "0908751394",
+                    "summary": "Bồ Tường Linh là Nhân viên Phòng Kinh Doanh Tiếp Thị. Email: linh.bo@hbc.com.vn, Số nội bộ: 012, SĐT công ty: 0908352498, SĐT cá nhân: 0908751394."
+                },
+                {
+                    "full_name": "Hồ Nguyễn Nhật Phi",
+                    "position": "Nhân viên",
+                    "email": "phi.ho@hbc.com.vn",
+                    "internal_extension": "013",
+                    "company_phone": "0967700063",
+                    "personal_phone": null,
+                    "summary": "Hồ Nguyễn Nhật Phi là Nhân viên Phòng Kinh Doanh Tiếp Thị. Email: phi.ho@hbc.com.vn, Số nội bộ: 013, SĐT công ty: 0967700063."
+                },
+                {
+                    "full_name": "Trần Thị Thùy Như",
+                    "position": "Nhân viên",
+                    "email": "nhu.tran@hbc.com.vn",
+                    "internal_extension": "013",
+                    "company_phone": null,
+                    "personal_phone": "0944540505",
+                    "summary": "Trần Thị Thùy Như là Nhân viên Phòng Kinh Doanh Tiếp Thị. Email: nhu.tran@hbc.com.vn, Số nội bộ: 013, SĐT cá nhân: 0944540505."
+                },
+                {
+                    "full_name": "Bùi Minh Trung",
+                    "position": "Nhân viên",
+                    "email": "trung.bui@hbc.com.vn",
+                    "internal_extension": "013",
+                    "company_phone": "0903847388",
+                    "personal_phone": "0933105207",
+                    "summary": "Bùi Minh Trung là Nhân viên Phòng Kinh Doanh Tiếp Thị. Email: trung.bui@hbc.com.vn, Số nội bộ: 013, SĐT công ty: 0903847388, SĐT cá nhân: 0933105207."
+                },
+                {
+                    "full_name": "Phạm Văn Đức",
+                    "position": "Nhân viên",
+                    "email": "duc.pham@hbc.com.vn",
+                    "internal_extension": "028.62817623",
+                    "company_phone": "0909519525",
+                    "personal_phone": "0916020958",
+                    "summary": "Phạm Văn Đức là Nhân viên Phòng Kinh Doanh Tiếp Thị. Email: duc.pham@hbc.com.vn, Số nội bộ: 028.62817623, SĐT công ty: 0909519525, SĐT cá nhân: 0916020958."
+                }
+            ]
+        },
+        {
+            "department_name": "Phòng Hành Chính Nhân Sự",
+            "members": [
+                {
+                    "full_name": "Phan Thị Ngọt",
+                    "position": "Giám đốc",
+                    "email": "ngot.phan@hbc.com.vn",
+                    "internal_extension": "022",
+                    "company_phone": "0901105956",
+                    "personal_phone": "0903906836",
+                    "summary": "Phan Thị Ngọt là Giám đốc Phòng Hành Chính Nhân Sự. Email: ngot.phan@hbc.com.vn, Số nội bộ: 022, SĐT công ty: 0901105956, SĐT cá nhân: 0903906836."
+                },
+                {
+                    "full_name": "Trần Thị Ngọc Hà",
+                    "position": "Nhân viên",
+                    "email": "ha.tran@hbc.com.vn",
+                    "internal_extension": "022",
+                    "company_phone": "0933955380",
+                    "personal_phone": "0908978604",
+                    "summary": "Trần Thị Ngọc Hà là Nhân viên Phòng Hành Chính Nhân Sự. Email: ha.tran@hbc.com.vn, Số nội bộ: 022, SĐT công ty: 0933955380, SĐT cá nhân: 0908978604."
+                },
+                {
+                    "full_name": "Ngô Thị Thanh Lan",
+                    "position": "Nhân viên",
+                    "email": "lan.ngo@hbc.com.vn",
+                    "internal_extension": "022",
+                    "company_phone": "0903165958",
+                    "personal_phone": null,
+                    "summary": "Ngô Thị Thanh Lan là Nhân viên Phòng Hành Chính Nhân Sự. Email: lan.ngo@hbc.com.vn, Số nội bộ: 022, SĐT công ty: 0903165958."
+                },
+                {
+                    "full_name": "Lễ Tân/Bảo vệ",
+                    "position": "Nhân viên",
+                    "email": null,
+                    "internal_extension": "001/014",
+                    "company_phone": null,
+                    "personal_phone": null,
+                    "summary": "Lễ Tân/Bảo vệ thuộc Phòng Hành Chính Nhân Sự. Số nội bộ: 001/014."
+                },
+                {
+                    "full_name": "Điền Hùng Phương",
+                    "position": "Nhân viên",
+                    "email": null,
+                    "internal_extension": null,
+                    "company_phone": null,
+                    "personal_phone": "0903994925",
+                    "summary": "Điền Hùng Phương là Nhân viên Phòng Hành Chính Nhân Sự. SĐT cá nhân: 0903994925."
+                },
+                {
+                    "full_name": "Phạm Thị Vân",
+                    "position": "Nhân viên",
+                    "email": null,
+                    "internal_extension": null,
+                    "company_phone": null,
+                    "personal_phone": "0908781165",
+                    "summary": "Phạm Thị Vân là Nhân viên Phòng Hành Chính Nhân Sự. SĐT cá nhân: 0908781165."
+                }
+            ]
+        },
+        {
+            "department_name": "Phòng Công Nghệ Thông Tin",
+            "members": [
+                {
+                    "full_name": "Nguyễn Hoàng Phong",
+                    "position": "Giám đốc",
+                    "email": "phong.nguyen@hbc.com.vn",
+                    "internal_extension": "024",
+                    "company_phone": "0937479889",
+                    "personal_phone": "0907673020",
+                    "summary": "Nguyễn Hoàng Phong là Giám đốc Phòng Công Nghệ Thông Tin. Email: phong.nguyen@hbc.com.vn, Số nội bộ: 024, SĐT công ty: 0937479889, SĐT cá nhân: 0907673020."
+                },
+                {
+                    "full_name": "Nguyễn Thành Trung",
+                    "position": "Nhân viên",
+                    "email": "trung.nguyen@hbc.com.vn",
+                    "internal_extension": "024",
+                    "company_phone": null,
+                    "personal_phone": "0972353755",
+                    "summary": "Nguyễn Thành Trung là Nhân viên Phòng Công Nghệ Thông Tin. Email: trung.nguyen@hbc.com.vn, Số nội bộ: 024, SĐT cá nhân: 0972353755."
+                },
+                {
+                    "full_name": "Trần Nhật Anh",
+                    "position": "Nhân viên",
+                    "email": "anh.tran@hbc.com.vn",
+                    "internal_extension": "024",
+                    "company_phone": null,
+                    "personal_phone": "0967886527",
+                    "summary": "Trần Nhật Anh là Nhân viên Phòng Công Nghệ Thông Tin. Email: anh.tran@hbc.com.vn, Số nội bộ: 024, SĐT cá nhân: 0967886527."
+                },
+                {
+                    "full_name": "Phan Khắc Bảo Nghĩa",
+                    "position": "Nhân viên",
+                    "email": "nghia.phan@hbc.com.vn",
+                    "internal_extension": "024",
+                    "company_phone": null,
+                    "personal_phone": null,
+                    "summary": "Phan Khắc Bảo Nghĩa là Nhân viên Phòng Công Nghệ Thông Tin. Email: nghia.phan@hbc.com.vn, Số nội bộ: 024."
+                },
+                {
+                    "full_name": "Hồ An",
+                    "position": "Nhân viên",
+                    "email": "an.ho@hbc.com.vn",
+                    "internal_extension": "024",
+                    "company_phone": null,
+                    "personal_phone": null,
+                    "summary": "Hồ An là Nhân viên Phòng Công Nghệ Thông Tin. Email: an.ho@hbc.com.vn, Số nội bộ: 024."
+                },
+                {
+                    "full_name": "Nguyễn Xuân Nhàn",
+                    "position": "Nhân viên",
+                    "email": "nhan.nguyenxuan@hbc.com.vn",
+                    "internal_extension": "024",
+                    "company_phone": null,
+                    "personal_phone": null,
+                    "summary": "Nguyễn Xuân Nhàn là Nhân viên Phòng Công Nghệ Thông Tin. Email: nhan.nguyenxuan@hbc.com.vn, Số nội bộ: 024."
+                }
+            ]
+        },
+        {
+            "department_name": "Phòng Tài Chính Kế Toán",
+            "members": [
+                {
+                    "full_name": "Trương Nhật Trần",
+                    "position": "Giám đốc",
+                    "email": "tran.truong@hbc.com.vn",
+                    "internal_extension": "023",
+                    "company_phone": "0903605388",
+                    "personal_phone": null,
+                    "summary": "Trương Nhật Trần là Giám đốc Phòng Tài Chính Kế Toán. Email: tran.truong@hbc.com.vn, Số nội bộ: 023, SĐT công ty: 0903605388."
+                },
+                {
+                    "full_name": "Trần Thị Ngọc Diễm",
+                    "position": "Nhân viên",
+                    "email": "diem.tran@hbc.com.vn",
+                    "internal_extension": "023",
+                    "company_phone": "0902428359",
+                    "personal_phone": null,
+                    "summary": "Trần Thị Ngọc Diễm là Nhân viên Phòng Tài Chính Kế Toán. Email: diem.tran@hbc.com.vn, Số nội bộ: 023, SĐT công ty: 0902428359."
+                },
+                {
+                    "full_name": "Nguyễn Thị Thắng",
+                    "position": "Nhân viên",
+                    "email": "thang.nguyen@hbc.com.vn",
+                    "internal_extension": "023",
+                    "company_phone": "0933853510",
+                    "personal_phone": "0906725356",
+                    "summary": "Nguyễn Thị Thắng là Nhân viên Phòng Tài Chính Kế Toán. Email: thang.nguyen@hbc.com.vn, Số nội bộ: 023, SĐT công ty: 0933853510, SĐT cá nhân: 0906725356."
+                },
+                {
+                    "full_name": "Võ Thị Thanh Thảo",
+                    "position": "Nhân viên",
+                    "email": "thanhthao.vo@hbc.com.vn",
+                    "internal_extension": "023",
+                    "company_phone": "0931907859",
+                    "personal_phone": "0906725356",
+                    "summary": "Võ Thị Thanh Thảo là Nhân viên Phòng Tài Chính Kế Toán. Email: thanhthao.vo@hbc.com.vn, Số nội bộ: 023, SĐT công ty: 0931907859, SĐT cá nhân: 0906725356."
+                }
+            ]
+        }
+    ]
+}

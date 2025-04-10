@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import asyncio
+import time
 import uuid
 from typing import Dict, Any, Optional, List
 from fastapi import Query
@@ -114,15 +115,20 @@ def initialize_rag_agent():
 # Định nghĩa các model Pydantic
 class ChatRequest(BaseModel):
     topic: str = Field(..., description="Chủ đề của cuộc hội thoại")
+    user_email: str = Field(..., description="Email người dùng")
     prompt: str = Field(..., description="Nội dung tin nhắn")
+    mode: str = Field(..., description="Mode của cuộc hội thoại think hoặc normal")
     section_name: str = Field(..., description="Tên section của cuộc hội thoại")
 
 class ChatResponse(BaseModel):
     output: str = Field(..., description="Phản hồi từ AI")
     tool_usages: Optional[List[Dict[str, Any]]] = Field(None, description="Các công cụ đã được sử dụng")
     topic: str = Field(..., description="Chủ đề của cuộc hội thoại")
+    token_input: int = Field(..., description="Số token đã sử dụng")
+    token_output: int = Field(..., description="Số token đã sử dụng")
+    time_response: float = Field(..., description="Thời gian phản hồi")
     section_name: str = Field(..., description="Tên section của cuộc hội thoại")
-    think: bool = Field(False, description="Có phải là think không")
+    mode: str = Field(..., description="Mode của cuộc hội thoại think hoặc normal")
 
 class ProviderRequest(BaseModel):
     provider: str = Field(..., description="Nhà cung cấp LLM mới (openai, gemini, palm)")
@@ -130,9 +136,10 @@ class ProviderRequest(BaseModel):
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(
     topic: str = Query(..., description="Chủ đề của cuộc hội thoại"),
+    user_email: str = Query(..., description="Email người dùng"),
     prompt: str = Query(..., description="Nội dung tin nhắn"),
     section_name: str = Query(..., description="Tên section của cuộc hội thoại"),
-    think: bool = Query(False, description="Có phải là think không")
+    mode: str = Query(..., description="Mode của cuộc hội thoại think hoặc normal")
 ):
     """
     Endpoint để chat với AI
@@ -144,16 +151,21 @@ async def chat(
             main_rag_agent = initialize_rag_agent()
         
         # Gọi RAG Agent
-        mode = "think" if think else "normal"
+        time_start = time.time()
         response = main_rag_agent.chat(prompt, mode)
+        time_end = time.time()
+        time_response = time_end - time_start
         
         # Trả về kết quả
         return ChatResponse(
             output=response["result"],
             tool_usages=response.get("tool_usages"),
             topic=topic,
+            token_input=0,
+            token_output=0,
+            time_response=time_response,
             section_name=section_name,
-            think=think
+            mode=mode
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
@@ -163,7 +175,7 @@ async def stream_chat(
     topic: str = Query(..., description="Chủ đề của cuộc hội thoại"),
     prompt: str = Query(..., description="Nội dung tin nhắn"),
     section_name: str = Query(..., description="Tên section của cuộc hội thoại"),
-    think: bool = Query(False, description="Có phải là think không")
+    mode: str = Query(..., description="Mode của cuộc hội thoại think hoặc normal")
 ):
     """
     Endpoint để stream chat với AI
@@ -182,7 +194,7 @@ async def stream_chat(
                     'output': chunk, 
                     'topic': topic,
                     'section_name': section_name,
-                    'think': think
+                    'mode': mode
                 }
                 yield f"data: {json.dumps(data)}\n\n"
             
@@ -191,7 +203,7 @@ async def stream_chat(
                 'output': '[DONE]', 
                 'topic': topic,
                 'section_name': section_name,
-                'think': think
+                'mode': mode
             }
             yield f"data: {json.dumps(done_data)}\n\n"
         except Exception as e:
@@ -199,7 +211,7 @@ async def stream_chat(
                 'error': str(e), 
                 'topic': topic,
                 'section_name': section_name,
-                'think': think
+                'mode': mode
             }
             yield f"data: {json.dumps(error_data)}\n\n"
     
