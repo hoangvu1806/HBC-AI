@@ -1,0 +1,306 @@
+/* Thiết lập chung */
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #3b82f6;
+    --text-color: #1f2937;
+    --bg-color: #f9fafb;
+    --chat-bg: #f3f4f6;
+    --message-bg: #ffffff;
+    --user-message-bg: #dbeafe;
+    --bot-message-bg: #f8fafc;
+    --border-color: #e5e7eb;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+    --hover-color: #f1f5f9;
+    --hover-color-light: #f8fafc;
+    --hover-color-accent: #f1f5f9;
+    --active-color: #e5e7eb;
+    --input-bg: #ffffff;
+    --input-bg-accent: #f9fafb;
+    --input-border: #e5e7eb;
+    --input-focus: #2563eb;
+    --button-bg: #2563eb;
+    --button-hover: #1d4ed8;
+    --button-text: #ffffff;
+    --error-color: #ef4444;
+    --danger-color-rgb: 239, 68, 68;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --info-color: #0ea5e9;
+    --font-size-small: 14px;
+    --font-size-medium: 16px;
+    --font-size-large: 18px;
+    --border-radius: 12px;
+    --transition-speed: 0.3s;
+    --sidebar-hover: #eff6ff;
+    --sidebar-active: #dbeafe;
+    --sidebar-bg: #f8fafc;
+    --sidebar-bg-gradient: #f1f5f9;
+    --container-bg: #ffffff;
+    --text-secondary: #64748b;
+    --danger-color: #ef4444;
+    --primary-hover: #1d4ed8;
+    --primary-rgb: 37, 99, 235;
+    --primary-bg: #ffffff;
+    --secondary-bg: #f8fafc;
+    --accent-color: #2563eb;
+    --primary-text: #1f2937;
+    --secondary-text: #64748b;
+    --bot-bg: #f8fafc;
+    --user-bg: #2563eb;
+    --user-text: #ffffff;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+    --sidebar-width: 250px;
+    --compact-sidebar-width: 80px;
+    --font-weight-normal: 425;
+    --font-weight-bold: 750;
+    --font-regular: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-code: "Fira Code", "JetBrains Mono", "Menlo", "Monaco", "Consolas",
+        "Liberation Mono", "Courier New", monospace;
+    --message-max-width: 90%;
+    --markdown-blockquote-bg: #f8fafc;
+    --code-bg: #f1f5f9;
+    --emoji-picker-bg: var(--primary-bg);
+    --emoji-picker-border: var(--border-color);
+    --setting-panel-bg: var(--secondary-bg);
+    --editor-bg: #f9fafb;
+    --think-mode-color: #fbbf24;
+    --think-mode-bg: #2563eb;
+    --think-mode-bg-light: #3b82f6;
+    --think-mode-bg-accent: #1d4ed8;
+    --think-mode-text: #ffffff;
+    --primary-color-light: rgba(37, 99, 235, 0.1);
+}
+
+/* Chế độ tối */
+body.dark-mode {
+    --primary-color: #3b82f6;
+    --secondary-color: #60a5fa;
+    --text-color: #f1f5f9;
+    --bg-color: #10151c;
+    --chat-bg: #10151c;
+    --message-bg: #10151c;
+    --user-message-bg: #1e40af;
+    --bot-message-bg: #10151c;
+    --border-color: #334155;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --hover-color: #10151c;
+    --hover-color-light: #334155;
+    --hover-color-accent: #10151c;
+    --active-color: #334155;
+    --input-bg: #10151c;
+    --input-bg-accent: #10151c;
+    --input-border: #334155;
+    --input-focus: #3b82f6;
+    --button-bg: #3b82f6;
+    --button-hover: #2563eb;
+    --button-text: #ffffff;
+    --error-color: #f87171;
+    --danger-color-rgb: 248, 113, 113;
+    --success-color: #34d399;
+    --warning-color: #fbbf24;
+    --info-color: #38bdf8;
+    --sidebar-hover: #1e40af;
+    --sidebar-active: #1e3a8a;
+    --sidebar-bg: #10151c;
+    --sidebar-bg-gradient: #10151c;
+    --container-bg: #10151c;
+    --text-secondary: #94a3b8;
+    --danger-color: #f87171;
+    --primary-hover: #2563eb;
+    --primary-rgb: 59, 130, 246;
+    --primary-bg: #10151c;
+    --secondary-bg: #10151c;
+    --bot-bg: #10151c;
+    --user-bg: #1e40af;
+    --user-text: #ffffff;
+    --markdown-blockquote-bg: #10151c;
+    --code-bg: #10151c;
+    --think-mode-color: #fbbf24;
+    --think-mode-bg: #1e40af;
+    --think-mode-bg-light: #3b82f6;
+    --think-mode-bg-accent: #1d4ed8;
+    --think-mode-text: #ffffff;
+    --primary-color-light: rgba(59, 130, 246, 0.15);
+}
+
+/* highlight.js styles cho chế độ tối */
+body.dark-mode .hljs {
+    color: #e6e6e6;
+    background: #21262d;
+}
+
+body.dark-mode .hljs-keyword,
+body.dark-mode .hljs-selector-tag,
+body.dark-mode .hljs-literal,
+body.dark-mode .hljs-section,
+body.dark-mode .hljs-link {
+    color: #79c0ff;
+}
+
+body.dark-mode .hljs-function .hljs-keyword {
+    color: #ff7b72;
+}
+
+body.dark-mode .hljs-subst {
+    color: #e6e6e6;
+}
+
+body.dark-mode .hljs-string,
+body.dark-mode .hljs-attr,
+body.dark-mode .hljs-meta .hljs-string {
+    color: #a5d6ff;
+}
+
+body.dark-mode .hljs-title,
+body.dark-mode .hljs-symbol,
+body.dark-mode .hljs-bullet {
+    color: #d2a8ff;
+}
+
+body.dark-mode .hljs-tag,
+body.dark-mode .hljs-name,
+body.dark-mode .hljs-number,
+body.dark-mode .hljs-built_in,
+body.dark-mode .hljs-template-variable,
+body.dark-mode .hljs-builtin-name,
+body.dark-mode .hljs-type,
+body.dark-mode .hljs-addition,
+body.dark-mode .hljs-variable,
+body.dark-mode .hljs-attribute {
+    color: #7ee787;
+}
+
+body.dark-mode .hljs-comment,
+body.dark-mode .hljs-quote,
+body.dark-mode .hljs-deletion,
+body.dark-mode .hljs-meta {
+    color: #8b949e;
+}
+
+body.dark-mode .hljs-emphasis {
+    font-style: italic;
+}
+
+body.dark-mode .hljs-strong {
+    font-weight: bold;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", sans-serif;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: var(--font-size-medium);
+    line-height: 1.6;
+    transition: var(--transition-speed);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    font-weight: var(--font-weight-normal);
+}
+
+/* Layout mới - giống ChatGPT */
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--primary-rgb), 0.2);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--primary-rgb), 0.5);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--primary-rgb), 0.3);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--primary-rgb), 0.6);
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        width: 240px;
+    }
+    .suggestion-row {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+    .toggleSidebarBtn {
+        display: flex !important;
+    }
+    .message {
+        margin-bottom: 15px;
+    }
+    .settings-panel {
+        width: 100%;
+    }
+}
+
+/* Hiệu ứng khi sidebar được mở ra */
+body.sidebar-open .sidebar {
+    transform: translateX(0) !important;
+}
+
+body.sidebar-open .overlay {
+    display: block !important;
+}
+
+body.sidebar-open .main-content {
+    opacity: 0.98; /* Chỉ làm mờ nhẹ nội dung khi sidebar mở ra */
+}
+
+body.sidebar-hidden .main-content {
+    width: 100% !important;
+}
+
+body.sidebar-hidden .chatContainer,
+body.sidebar-hidden .chatMessages,
+body.sidebar-hidden .chatInputWrapper {
+    width: 100%;
+    max-width: 100%;
+}
+
+body.sidebar-hidden .chatWelcome {
+    max-width: 80%;
+}

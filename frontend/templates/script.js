@@ -79,11 +79,12 @@ document.addEventListener("DOMContentLoaded", function () {
     async function checkAccessToken() {
         try {
             let accessToken = getCookie("access_token");
-            let hostUrl = window.location.origin;
+            if (!accessToken) {
+                throw new Error("Không tìm thấy access token");
+            }
             const apiUrl = `https://id-api-staging.hbc.com.vn/v1/user/auth/google/access-token?accessToken=${encodeURIComponent(
                 accessToken
             )}`;
-            // Sử dụng endpoint từ biến API_ENDPOINTS
             const response = await fetch(apiUrl, {
                 method: "GET",
                 headers: {
@@ -101,6 +102,51 @@ document.addEventListener("DOMContentLoaded", function () {
             return await response.json();
         } catch (error) {
             console.error("Lỗi kiểm tra token:", error);
+            throw error;
+        }
+    }
+
+    // Hàm làm mới access token
+    async function refreshAccessToken() {
+        try {
+            let refreshToken = getCookie("refresh_token");
+            if (!refreshToken) {
+                throw new Error("Không tìm thấy refresh token");
+            }
+            const response = await fetch(
+                "https://id-api-staging.hbc.com.vn/v1/user/auth/google/access-token",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer 1", // Giả định, cần xác nhận nếu khác
+                    },
+                    body: JSON.stringify({
+                        refreshToken: refreshToken,
+                        hostUrl: window.location.origin,
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Không thể làm mới token");
+            }
+
+            const data = await response.json();
+            // Giả định response: { access_token, refresh_token, expires_in }
+            setCookie("access_token", data.access_token, {
+                path: "/",
+                expires: new Date(Date.now() + data.expires_in * 1000),
+            });
+            if (data.refresh_token) {
+                setCookie("refresh_token", data.refresh_token, {
+                    path: "/",
+                });
+            }
+            return data.access_token;
+        } catch (error) {
+            console.error("Lỗi làm mới token:", error);
             throw error;
         }
     }
@@ -195,9 +241,15 @@ document.addEventListener("DOMContentLoaded", function () {
             // Nếu có URL chuyển hướng trong phản hồi lỗi, thực hiện chuyển hướng
             if (err?.response?.data?.redirectUrl) {
                 window.location.href = err.response.data.redirectUrl;
+            } else {
+                // Chuyển hướng đến trang đăng nhập
+                window.location.href = `${ID_HBC_LOGIN_URL}?app_redirect_url=${btoa(
+                    window.location.href
+                )}`;
             }
         }
     }
+
     // Hàm khôi phục thông tin người dùng từ localStorage
     function restoreUserInfo() {
         try {
@@ -241,13 +293,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 GOOGLE_AES_KEY
             ).toString(CryptoJS.enc.Utf8);
 
-            // Kiểm tra dữ liệu sau khi giải mã
-            if (!decryptedData) {
-                throw new Error(
-                    "Không thể giải mã dữ liệu. Vui lòng kiểm tra khóa GOOGLE_AES_KEY."
-                );
-            }
-
             // Parse dữ liệu đăng nhập đã giải mã
             let dataLogin = JSON.parse(decryptedData);
 
@@ -261,7 +306,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            // Lưu thông tin người dùng vào localStorage hoặc biến toàn cục
+            // Lưu thông tin người dùng vào localStorage
             localStorage.setItem("user", JSON.stringify(dataLogin.user));
 
             // Lưu token vào cookie
@@ -269,7 +314,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 path: "/",
                 expires: new Date(Number(dataLogin.user.exp) * 1000),
             });
-            setCookie("refresh_token", dataLogin.refresh_token, { path: "/" });
+            setCookie("refresh_token", dataLogin.refresh_token, {
+                path: "/",
+            });
 
             // Cập nhật giao diện người dùng
             updateUserInfo(dataLogin.user);
@@ -288,13 +335,13 @@ document.addEventListener("DOMContentLoaded", function () {
             // Cập nhật tên và email
             const nameElement = userInfo.querySelector(".user-name");
             if (nameElement) {
-                nameElement.textContent = user.displayName || "Người dùng";
+                nameElement.textContent = user.displayName || "Guest";
             }
 
             const emailElement = userInfo.querySelector(".user-email");
             if (emailElement) {
                 emailElement.textContent =
-                    user.emailAddress || "user@example.com";
+                    user.emailAddress || "guest@hbc.com.vn";
             }
 
             // Cập nhật avatar
@@ -302,14 +349,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if (avatarImg) {
                 if (user.avatar) {
                     avatarImg.src = user.picture;
-                    avatarImg.alt = `${
-                        user.displayName || "Người dùng"
-                    } Avatar`;
+                    avatarImg.alt = `${user.displayName || "Guest"} Avatar`;
                 } else {
                     avatarImg.src = user.picture;
-                    avatarImg.alt = `${
-                        user.displayName || "Người dùng"
-                    } Avatar`;
+                    avatarImg.alt = `${user.displayName || "Guest"} Avatar`;
                 }
             }
         }
@@ -317,12 +360,12 @@ document.addEventListener("DOMContentLoaded", function () {
         // Cập nhật thông tin trong dropdown nếu có
         if (document.querySelector(".user-dropdown .user-name")) {
             document.querySelector(".user-dropdown .user-name").textContent =
-                user.displayName || "Người dùng";
+                user.displayName || "Guest";
         }
 
         if (document.querySelector(".user-dropdown .user-email")) {
             document.querySelector(".user-dropdown .user-email").textContent =
-                user.emailAddress || "user@example.com";
+                user.emailAddress || "guest@hbc.com.vn";
         }
 
         // Cập nhật tất cả các avatar khác trong trang
@@ -365,7 +408,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const loadingScreen = document.getElementById("loading-screen");
         if (loadingScreen) {
             loadingScreen.remove();
-            // console.log("Đã ẩn màn hình loading");
         }
     }
 
@@ -403,7 +445,7 @@ document.addEventListener("DOMContentLoaded", function () {
         gfm: true,
         breaks: true,
         sanitize: false,
-        smartypants: false,
+        smartypants: true,
         xhtml: false,
     });
 
@@ -421,9 +463,13 @@ document.addEventListener("DOMContentLoaded", function () {
     let uploadedFiles = [];
 
     // Thêm hàm gọi API
-    async function callChatAPI(message, sectionName, files = []) {
+    async function callChatAPI(message, sessionName, files = []) {
         try {
-            const apiUrl = "https://n8nai.hbc.com.vn/webhook/hcns";
+            const apiUrl = "https://aiapi.hbc.com.vn/api/chat";
+            const accessToken = getCookie("access_token");
+            if (!accessToken) {
+                throw new Error("Không tìm thấy access token");
+            }
 
             // Lấy thông tin người dùng từ localStorage
             const userData = localStorage.getItem("user");
@@ -432,13 +478,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 const user = JSON.parse(userData);
                 userEmail = user.emailAddress || "guest";
             }
-
+            
             // Chuẩn bị dữ liệu gửi đi
             const formData = new FormData();
             formData.append("topic", currentTopic);
             formData.append("user_email", userEmail);
             formData.append("prompt", message);
-            formData.append("section_name", sectionName);
+            formData.append("session_name", sessionName);
             formData.append("mode", thinkEnabled ? "think" : "normal");
             // Thêm files nếu có
             if (files && files.length > 0) {
@@ -446,18 +492,53 @@ document.addEventListener("DOMContentLoaded", function () {
                     formData.append(`files`, file);
                 });
             }
-            console.log("formData: ", formData);
-            // Gửi yêu cầu đến API và đọc phản hồi thực tế
+            const debugFormData = {};
+            formData.forEach((value, key) => {
+                debugFormData[key] = value;
+            });
+            console.log("FormData nội dung:", debugFormData);
+            // Gửi yêu cầu đến API
             const response = await fetch(apiUrl, {
                 method: "POST",
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
                 body: formData,
             });
-
+            console.log(response.toString());
             // Kiểm tra trạng thái phản hồi
             if (!response.ok) {
-                throw new Error(
-                    `API error: ${response.status} ${response.statusText}`
-                );
+                if (response.status === 401) {
+                    // Token không hợp lệ, thử làm mới
+                    try {
+                        const newToken = await refreshAccessToken();
+                        // Thử lại yêu cầu với token mới
+                        const retryResponse = await fetch(apiUrl, {
+                            method: "POST",
+                            headers: {
+                                Authorization: `Bearer ${newToken}`,
+                            },
+                            body: formData,
+                        });
+                        if (!retryResponse.ok) {
+                            throw new Error(
+                                `Retry failed: ${retryResponse.status} ${retryResponse.statusText}`
+                            );
+                        }
+                        const retryData = await retryResponse.json();
+                        return (
+                            retryData.output ||
+                            JSON.stringify(retryData, null, 2)
+                        );
+                    } catch (refreshError) {
+                        alert("Vui lòng đăng nhập lại");
+                        throw new Error("Không thể làm mới token");
+                    }
+                } else {
+                    throw new Error(
+                        `API error: ${response.status} ${response.statusText}`
+                    );
+                }
             }
 
             // Xử lý dữ liệu từ phản hồi
@@ -467,7 +548,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (data && data.output) {
                 return data.output;
             } else if (data) {
-                // Nếu không có trường output, trả về toàn bộ phản hồi dạng chuỗi
                 console.log("Phản hồi API không chứa trường output:", data);
                 return JSON.stringify(data, null, 2);
             } else {
@@ -475,6 +555,13 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         } catch (error) {
             console.error("Lỗi khi gọi API:", error);
+            if (error.message === "Không thể làm mới token") {
+                // Chuyển hướng đến trang đăng nhập
+                window.location.href = `${ID_HBC_LOGIN_URL}?app_redirect_url=${btoa(
+                    window.location.href
+                )}`;
+                return null;
+            }
             return `Đã xảy ra lỗi khi gọi API: ${error.message}. Vui lòng thử lại sau.`;
         }
     }
@@ -492,7 +579,7 @@ document.addEventListener("DOMContentLoaded", function () {
             (chatMessages.children.length === 1 &&
                 chatMessages.querySelector(".chat-welcome"))
         ) {
-            return; // Không có tin nhắn để lưu
+            return;
         }
 
         const messages = [];
@@ -665,7 +752,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Hàm gửi tin nhắn
     function sendMessage() {
         const message = userInput.value.trim();
-        const sectionName = document.querySelector(".main-title").textContent;
+        const sessionName = document.querySelector(".main-title").textContent;
         // Sử dụng biến uploadedFiles thay vì uploadBtn.files
         if (message === "" && uploadedFiles.length === 0) return;
 
@@ -724,14 +811,19 @@ document.addEventListener("DOMContentLoaded", function () {
         // Hiển thị đang nhập
         showTypingIndicator();
 
-        // Gọi API thực tế thay vì giả lập
+        // Gọi API thực tế
         (async () => {
             try {
                 const response = await callChatAPI(
                     message,
-                    sectionName,
+                    sessionName,
                     filesArray
                 );
+
+                if (response === null) {
+                    // Đã xử lý chuyển hướng trong callChatAPI
+                    return;
+                }
 
                 // Kiểm tra xem người dùng có chuyển sang cuộc trò chuyện khác không
                 if (originalChatId === updateCurrentChatId()) {
@@ -1423,7 +1515,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     this.classList.add("active");
 
                     // Cập nhật tiêu đề chat
-                    const conversationName =
+                    let conversationName =
                         this.querySelector(".conversation-name").textContent;
                     updateChatTitle(conversationName);
 
@@ -1582,12 +1674,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Toggle user dropdown
     if (userAvatar) {
-        // Khôi phục xử lý hiển thị dropdown khi click vào avatar
         userAvatar.addEventListener("click", function () {
             userDropdown.classList.toggle("active");
         });
 
-        // Khôi phục xử lý đóng dropdown khi click bên ngoài
         document.addEventListener("click", function (e) {
             if (
                 !userAvatar.contains(e.target) &&
@@ -1619,11 +1709,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Xử lý nút tạo hội thoại mới
     if (newChatBtn) {
-        // Xóa event listeners cũ
         const newChatBtnClone = newChatBtn.cloneNode(true);
         newChatBtn.parentNode.replaceChild(newChatBtnClone, newChatBtn);
 
-        // Thêm event listener mới
         newChatBtnClone.addEventListener("click", function () {
             createNewChat();
         });
@@ -1689,8 +1777,6 @@ document.addEventListener("DOMContentLoaded", function () {
         ratingToggle.addEventListener("change", function () {
             showRatings = this.checked;
             localStorage.setItem("showRatings", showRatings);
-
-            // Cập nhật hiển thị đánh giá khi toggle thay đổi
             updateRatingDisplay();
         });
     }
@@ -1707,9 +1793,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Export chat
     exportChatBtn.addEventListener("click", function () {
-        // Tạo nội dung từ tin nhắn
         let content = "# Chat History\n\n";
-
         const messages = document.querySelectorAll(".message");
         if (messages.length === 0) {
             alert("Không có tin nhắn nào để xuất.");
@@ -1726,7 +1810,6 @@ document.addEventListener("DOMContentLoaded", function () {
             content += "\n\n---\n\n";
         });
 
-        // Tạo và tải xuống file
         const blob = new Blob([content], { type: "text/markdown" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -1753,20 +1836,15 @@ document.addEventListener("DOMContentLoaded", function () {
     uploadBtn.addEventListener("click", function () {
         const input = document.createElement("input");
         input.type = "file";
-        input.multiple = true; // Cho phép upload nhiều file
+        input.multiple = true;
         input.accept = "image/*,.pdf,.doc,.docx,.txt";
         input.onchange = function (e) {
             const files = Array.from(e.target.files);
             if (files.length > 0) {
-                // Lưu file để gửi kèm với tin nhắn tiếp theo
                 uploadedFiles = [...uploadedFiles, ...files];
-
-                // Ẩn trang welcome nếu đang hiển thị
                 if (chatWelcome && chatWelcome.style.display !== "none") {
                     chatWelcome.style.display = "none";
                 }
-
-                // Hiển thị thông báo file đính kèm
                 showFileAttachmentIndicator(files);
             }
         };
@@ -1775,21 +1853,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Hiển thị indicator cho files đính kèm
     function showFileAttachmentIndicator(files) {
-        // Xóa indicator cũ nếu có
         const oldIndicator = document.querySelector(".file-indicator-wrapper");
         if (oldIndicator) {
             oldIndicator.remove();
         }
 
-        // Tạo wrapper để căn giữa
         const fileIndicatorWrapper = document.createElement("div");
         fileIndicatorWrapper.className = "file-indicator-wrapper";
 
-        // Tạo indicator mới
         const fileIndicator = document.createElement("div");
         fileIndicator.className = "file-indicator";
 
-        // Hiển thị danh sách files
         const fileList = document.createElement("div");
         fileList.className = "file-list";
 
@@ -1809,26 +1883,19 @@ document.addEventListener("DOMContentLoaded", function () {
         fileIndicator.appendChild(fileList);
         fileIndicatorWrapper.appendChild(fileIndicator);
 
-        // Thêm vào trước chat-input-container trong chat-input-wrapper
         const chatInputContainer = document.querySelector(
             ".chat-input-container"
         );
         const chatInputWrapper = document.querySelector(".chat-input-wrapper");
         chatInputWrapper.insertBefore(fileIndicatorWrapper, chatInputContainer);
 
-        // Thêm sự kiện xóa file
         document.querySelectorAll(".remove-file").forEach((btn) => {
             btn.addEventListener("click", function () {
                 const filename = this.getAttribute("data-filename");
-                // Xóa file khỏi danh sách
                 uploadedFiles = uploadedFiles.filter(
                     (file) => file.name !== filename
                 );
-
-                // Xóa item hiển thị
                 this.closest(".file-item").remove();
-
-                // Nếu không còn file nào, xóa indicator
                 if (uploadedFiles.length === 0) {
                     fileIndicatorWrapper.remove();
                 }
@@ -1849,7 +1916,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Cập nhật giao diện settings để thêm tùy chọn cài đặt topic
     function updateSettingsPanel() {
-        // Thêm section mới vào settings panel
         const settingGroup = document.createElement("div");
         settingGroup.className = "setting-group";
         settingGroup.innerHTML = `
@@ -1861,12 +1927,9 @@ document.addEventListener("DOMContentLoaded", function () {
             <button id="save-topic" class="btn-secondary">Lưu cài đặt</button>
         `;
 
-        // Thêm vào panel
         const settingsContent = document.querySelector(".settings-content");
 
-        // Kiểm tra xem đã có section này chưa
         if (!document.getElementById("topic-input")) {
-            // Chèn trước phần "Lịch sử"
             const historyGroup = document.querySelector(
                 ".setting-group:last-child"
             );
@@ -1876,7 +1939,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 settingsContent.appendChild(settingGroup);
             }
 
-            // Thêm sự kiện cho nút lưu
             document
                 .getElementById("save-topic")
                 .addEventListener("click", function () {
@@ -1901,18 +1963,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 "Bạn có chắc muốn xóa tất cả tin nhắn trong cuộc trò chuyện hiện tại?"
             )
         ) {
-            // Lấy phiên chat hiện tại
             const activeChat = document.querySelector(
                 ".conversation-item.active"
             );
             if (activeChat) {
-                // Xóa tất cả tin nhắn và hiển thị welcome screen
                 chatMessages.innerHTML = "";
                 if (chatWelcome) {
                     chatWelcome.style.display = "block";
                 }
 
-                // Xóa tin nhắn trong localStorage
                 const chatId = activeChat.getAttribute("data-id");
                 const conversations = JSON.parse(
                     localStorage.getItem("conversations") || "[]"
@@ -1928,7 +1987,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     );
                 }
 
-                // Reset input
                 userInput.value = "";
                 resetInputHeight();
             }
@@ -1942,7 +2000,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (savedRatings) {
                 messageRatings = JSON.parse(savedRatings);
                 console.log("Đã khôi phục đánh giá tin nhắn:", messageRatings);
-                // Cập nhật hiển thị đánh giá cho các tin nhắn hiện có
                 updateRatingDisplay();
             }
         } catch (e) {
@@ -1964,7 +2021,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // Xử lý nút Think
     if (thinkToggleBtn) {
         thinkToggleBtn.addEventListener("click", function (e) {
-            // Tạo hiệu ứng ripple
             const ripple = document.createElement("span");
             ripple.classList.add("ripple");
             this.appendChild(ripple);
@@ -1975,17 +2031,14 @@ document.addEventListener("DOMContentLoaded", function () {
             ripple.style.left = e.clientX - rect.left - size / 2 + "px";
             ripple.style.top = e.clientY - rect.top - size / 2 + "px";
 
-            // Xóa hiệu ứng sau khi hoàn thành animation
             setTimeout(() => {
                 ripple.remove();
             }, 600);
 
-            // Thay đổi trạng thái think
             thinkEnabled = !thinkEnabled;
             localStorage.setItem("thinkEnabled", thinkEnabled);
             thinkToggleBtn.classList.toggle("active", thinkEnabled);
 
-            // Thông báo trạng thái
             const toastMessage = thinkEnabled
                 ? "Đã bật chế độ Think: AI sẽ hiển thị quá trình suy nghĩ"
                 : "Đã tắt chế độ Think: AI sẽ chỉ hiển thị kết quả cuối cùng";
@@ -1994,7 +2047,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function showToast(message, type = "info", duration = 3000) {
-        // Kiểm tra xem đã có toast container chưa
         let toastContainer = document.querySelector(".toast-container");
 
         if (!toastContainer) {
@@ -2002,7 +2054,6 @@ document.addEventListener("DOMContentLoaded", function () {
             toastContainer.className = "toast-container";
             document.body.appendChild(toastContainer);
 
-            // Thêm CSS cho toast container nếu chưa có
             const style = document.createElement("style");
             style.textContent = `
                 .toast-container {
@@ -2054,11 +2105,9 @@ document.addEventListener("DOMContentLoaded", function () {
             document.head.appendChild(style);
         }
 
-        // Tạo toast
         const toast = document.createElement("div");
         toast.className = `toast ${type}`;
 
-        // Icon dựa vào loại toast
         let icon = "info-circle";
         if (type === "success") icon = "check-circle";
         if (type === "error") icon = "exclamation-circle";
@@ -2067,7 +2116,6 @@ document.addEventListener("DOMContentLoaded", function () {
         toast.innerHTML = `<i class="fas fa-${icon}"></i>${message}`;
         toastContainer.appendChild(toast);
 
-        // Tự động xóa toast sau thời gian định trước
         setTimeout(() => {
             toast.remove();
         }, duration);
