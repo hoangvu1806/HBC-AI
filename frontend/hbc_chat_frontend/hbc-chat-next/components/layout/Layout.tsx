@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useChat } from "@/contexts/ChatContext";
 import { useSettings } from "@/contexts/SettingsContext";
-import Sidebar from "./Sidebar";
-import Header from "./Header";
+import Sidebar from "@/components/layout/Sidebar";
+import Header from "@/components/layout/Header";
 import Settings from "../ui/Settings";
 import styles from "@/styles/Chat.module.css";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,7 +22,6 @@ const Layout = ({ children }: LayoutProps) => {
         createNewChat,
         selectConversation,
         deleteConversation,
-        renameConversation,
         clearCurrentChat,
     } = useChat();
 
@@ -99,6 +98,23 @@ const Layout = ({ children }: LayoutProps) => {
         }
     };
 
+    // Hàm xóa hội thoại
+    const handleDeleteChat = (id: string) => {
+        // Sử dụng hàm deleteConversation từ ChatContext
+        deleteConversation(id);
+    };
+
+    // Hàm thay thế cho renameConversation đã bị loại bỏ
+    const handleRenameChat = (id: string, newName: string) => {
+        console.log("Chức năng đổi tên hội thoại đã bị vô hiệu hóa");
+    };
+
+    // Hàm xóa tin nhắn của cuộc trò chuyện hiện tại
+    const handleClearChat = () => {
+        // Sử dụng hàm clearCurrentChat từ ChatContext
+        clearCurrentChat();
+    };
+
     // Tính toán style cho main-content
     const mainContentStyle = {
         width: sidebarVisible && !isMobile ? "calc(100% - 280px)" : "100%",
@@ -130,8 +146,8 @@ const Layout = ({ children }: LayoutProps) => {
                     activeConversation={activeConversation || ""}
                     onNewChat={handleNewChat}
                     onSelectChat={handleSelectChat}
-                    onDeleteChat={deleteConversation}
-                    onRenameChat={renameConversation}
+                    onDeleteChat={handleDeleteChat}
+                    onRenameChat={handleRenameChat}
                     isVisible={true}
                     onCloseSidebar={isMobile ? handleToggleSidebar : undefined}
                 />
@@ -141,7 +157,7 @@ const Layout = ({ children }: LayoutProps) => {
             <div className={styles.mainContent} style={mainContentStyle}>
                 <Header
                     toggleSidebar={handleToggleSidebar}
-                    clearChat={clearCurrentChat}
+                    clearChat={handleClearChat}
                     openSettings={handleOpenSettings}
                     onLogout={handleLogout}
                     sidebarVisible={sidebarVisible}

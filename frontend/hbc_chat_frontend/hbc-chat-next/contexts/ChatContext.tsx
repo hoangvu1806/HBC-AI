@@ -46,6 +46,8 @@ interface ChatContextType {
     selectConversation: (id: string | null) => void;
     toggleThinkMode: () => void;
     loadChatHistoryFromAPI: () => Promise<void>;
+    deleteConversation: (id: string) => void;
+    clearCurrentChat: () => void;
 }
 
 // Tạo Context
@@ -725,6 +727,49 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    // Xóa một cuộc trò chuyện
+    const deleteConversation = (id: string) => {
+        // Xóa cuộc trò chuyện khỏi danh sách
+        const updatedConversations = conversations.filter(
+            (conv) => conv.id !== id
+        );
+
+        // Cập nhật trạng thái
+        setConversations(updatedConversations);
+
+        // Nếu xóa cuộc trò chuyện hiện tại, chuyển sang cuộc trò chuyện khác
+        if (id === activeConversation) {
+            if (updatedConversations.length > 0) {
+                setActiveConversation(updatedConversations[0].id);
+                setMessages(updatedConversations[0].messages);
+            } else {
+                // Nếu không còn cuộc trò chuyện nào, tạo mới
+                createNewChat();
+            }
+        }
+    };
+
+    // Xóa tin nhắn của cuộc trò chuyện hiện tại
+    const clearCurrentChat = () => {
+        if (!activeConversation) {
+            return;
+        }
+
+        // Cập nhật trạng thái
+        setMessages([]);
+        setConversations((prevConversations) =>
+            prevConversations.map((conv) => {
+                if (conv.id === activeConversation) {
+                    return {
+                        ...conv,
+                        messages: [],
+                    };
+                }
+                return conv;
+            })
+        );
+    };
+
     return (
         <ChatContext.Provider
             value={{
@@ -738,6 +783,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
                 selectConversation,
                 toggleThinkMode,
                 loadChatHistoryFromAPI,
+                deleteConversation,
+                clearCurrentChat,
             }}
         >
             {children}

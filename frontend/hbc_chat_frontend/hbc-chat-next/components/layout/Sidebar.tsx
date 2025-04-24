@@ -4,13 +4,11 @@ import {
     FaPlus,
     FaCommentDots,
     FaEdit,
-    FaTrash,
     FaClock,
     FaStar,
     FaAngleLeft,
 } from "react-icons/fa";
 import styles from "@/styles/Sidebar.module.css";
-import ConfirmDialog from "../ui/ConfirmDialog";
 
 interface Conversation {
     id: string;
@@ -44,7 +42,6 @@ const Sidebar = ({
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
     const [animatedItems, setAnimatedItems] = useState<boolean>(false);
-    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
     // Hàm cắt tên cuộc hội thoại nếu quá dài
     const truncateConversationName = (name: string, maxLength = 18) => {
@@ -72,28 +69,12 @@ const Sidebar = ({
         setEditName(currentName);
     };
 
-    const handleDeleteClick = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setConfirmDeleteId(id);
-    };
-
     const handleRenameSubmit = (id: string, e: React.FormEvent) => {
         e.preventDefault();
         if (editName.trim()) {
             onRenameChat(id, editName);
             setEditingId(null);
         }
-    };
-
-    const confirmDelete = () => {
-        if (confirmDeleteId) {
-            onDeleteChat(confirmDeleteId);
-            setConfirmDeleteId(null);
-        }
-    };
-
-    const cancelDelete = () => {
-        setConfirmDeleteId(null);
     };
 
     // Tạo icon ngẫu nhiên cho mỗi cuộc hội thoại
@@ -216,15 +197,6 @@ const Sidebar = ({
                                     >
                                         <FaEdit />
                                     </button>
-                                    <button
-                                        className={styles.deleteChatBtn}
-                                        title="Xóa hội thoại"
-                                        onClick={(e) =>
-                                            handleDeleteClick(conv.id, e)
-                                        }
-                                    >
-                                        <FaTrash />
-                                    </button>
                                 </div>
                             </div>
                         ))
@@ -235,17 +207,6 @@ const Sidebar = ({
                     © {new Date().getFullYear()} HBC AI Assistant
                 </div>
             </div>
-
-            <ConfirmDialog
-                isOpen={confirmDeleteId !== null}
-                title="Xóa hội thoại"
-                message="Bạn có chắc chắn muốn xóa hội thoại này không? Hành động này không thể hoàn tác."
-                confirmText="Xóa"
-                cancelText="Hủy"
-                onConfirm={confirmDelete}
-                onCancel={cancelDelete}
-                type="danger"
-            />
         </>
     );
 };

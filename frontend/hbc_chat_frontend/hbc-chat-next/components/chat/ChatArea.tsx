@@ -12,7 +12,6 @@ const ChatArea = () => {
         sendMessage,
         isThinkModeActive,
         toggleThinkMode,
-        rateMessage,
         isWaitingResponse,
     } = useChat();
 
@@ -35,8 +34,11 @@ const ChatArea = () => {
         sendMessage(suggestion);
     };
 
+    // Hàm thay thế cho rateMessage đã bị loại bỏ
     const handleRateMessage = (messageId: string, rating: number) => {
-        rateMessage(messageId, rating);
+        console.log(
+            `Đánh giá tin nhắn ${messageId} với ${rating} sao đã bị vô hiệu hóa`
+        );
     };
 
     return (

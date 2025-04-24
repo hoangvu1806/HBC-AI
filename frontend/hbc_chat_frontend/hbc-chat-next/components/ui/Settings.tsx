@@ -1,15 +1,11 @@
-import { 
-    FaTimes, 
-    FaMoon, 
-    FaDownload, 
-    FaTrashAlt, 
-    FaUserTie 
+import {
+    FaTimes,
+    FaMoon,
+    FaDownload,
+    FaTrashAlt,
+    FaUserTie,
 } from "react-icons/fa";
-import { 
-    FiMonitor, 
-    FiSettings, 
-    FiClock 
-} from "react-icons/fi";
+import { FiMonitor, FiSettings, FiClock } from "react-icons/fi";
 import styles from "@/styles/Settings.module.css";
 import { useState } from "react";
 import ConfirmDialog from "./ConfirmDialog";
@@ -109,10 +105,10 @@ const Settings = ({
                                 }
                             >
                                 <option value="HCNS">HCNS</option>
-                                <option value="IT">IT</option>
+                                {/* <option value="IT">IT</option>
                                 <option value="KT">Kế toán</option>
                                 <option value="KINH_DOANH">Kinh doanh</option>
-                                <option value="TGD">Ban TGĐ</option>
+                                <option value="TGD">Ban TGĐ</option> */}
                             </select>
                         </div>
                     </div>

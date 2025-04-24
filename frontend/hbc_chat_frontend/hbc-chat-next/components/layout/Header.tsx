@@ -7,7 +7,6 @@ import {
     FaMoon,
     FaSun,
     FaAngleRight,
-    FaEraser,
     FaAngleLeft,
 } from "react-icons/fa";
 import styles from "@/styles/Chat.module.css";
@@ -33,10 +32,11 @@ const Header = ({
     sidebarVisible = true,
 }: HeaderProps) => {
     const [dropdownVisible, setDropdownVisible] = useState(false);
-    const [showClearChatConfirm, setShowClearChatConfirm] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const avatarRef = useRef<HTMLDivElement>(null);
-    const { activeConversation, conversations } = useChat();
+    const { activeConversation, conversations, loadChatHistoryFromAPI } =
+        useChat();
     const { user, logout } = useAuth();
     const { settings, updateSettings } = useSettings();
     const [windowWidth, setWindowWidth] = useState<number>(1200);
@@ -106,20 +106,6 @@ const Header = ({
         updateSettings("darkMode", !settings.darkMode);
     };
 
-    const handleClearChat = () => {
-        setShowClearChatConfirm(true);
-        setDropdownVisible(false);
-    };
-
-    const confirmClearChat = () => {
-        clearChat();
-        setShowClearChatConfirm(false);
-    };
-
-    const cancelClearChat = () => {
-        setShowClearChatConfirm(false);
-    };
-
     const handleOpenSettings = () => {
         openSettings();
         setDropdownVisible(false);
@@ -128,6 +114,75 @@ const Header = ({
     const handleLogout = () => {
         onLogout();
         setDropdownVisible(false);
+    };
+
+    // Hàm để hiển thị dialog xác nhận xóa phiên chat
+    const handleShowDeleteConfirm = () => {
+        setShowDeleteConfirm(true);
+        setDropdownVisible(false);
+    };
+
+    // Hàm gọi API xóa phiên chat
+    const handleDeleteChatSession = async () => {
+        if (!activeConversation || !currentConversation) {
+            setShowDeleteConfirm(false);
+            return;
+        }
+
+        try {
+            // Lấy token xác thực từ cookie
+            const getCookie = (name: string) => {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop()?.split(";").shift();
+                return null;
+            };
+
+            const accessToken = getCookie("access_token");
+            if (!accessToken) {
+                alert("Vui lòng đăng nhập lại");
+                return;
+            }
+
+            // Lấy thông tin cần thiết để gửi API
+            const topic = settings.aiTopic; // Sử dụng giá trị từ settings
+            const sessionName = currentConversation.name;
+            const userEmail = user?.emailAddress || "";
+
+            // Gọi API xóa phiên chat
+            const response = await fetch(
+                `https://aiapi.hbc.com.vn/api/chat/delete?topic=${encodeURIComponent(
+                    topic
+                )}&user_email=${encodeURIComponent(
+                    userEmail
+                )}&session_name=${encodeURIComponent(sessionName)}`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.ok) {
+                // Nếu xóa thành công, cập nhật lại danh sách chat
+                await loadChatHistoryFromAPI();
+                setShowDeleteConfirm(false);
+            } else {
+                console.error("Lỗi khi xóa phiên chat:", response.statusText);
+                alert("Xóa phiên chat không thành công. Vui lòng thử lại sau.");
+                setShowDeleteConfirm(false);
+            }
+        } catch (error) {
+            console.error("Lỗi khi xóa phiên chat:", error);
+            alert("Đã xảy ra lỗi khi xóa phiên chat.");
+            setShowDeleteConfirm(false);
+        }
+    };
+
+    const cancelDeleteChat = () => {
+        setShowDeleteConfirm(false);
     };
 
     return (
@@ -163,10 +218,10 @@ const Header = ({
                 <div className={styles.userMenuContainer}>
                     <div className={styles.userActions}>
                         <button
-                            onClick={handleClearChat}
-                            title="Xóa cuộc trò chuyện hiện tại"
+                            onClick={handleShowDeleteConfirm}
+                            title="Xóa phiên chat hiện tại"
                         >
-                            <FaEraser />
+                            <FaTrash />
                         </button>
                         <button
                             onClick={toggleDarkMode}
@@ -253,13 +308,13 @@ const Header = ({
             </div>
 
             <ConfirmDialog
-                isOpen={showClearChatConfirm}
-                title="Xóa cuộc trò chuyện"
-                message="Bạn có chắc chắn muốn xóa tất cả tin nhắn trong cuộc trò chuyện hiện tại không? Hành động này không thể hoàn tác."
+                isOpen={showDeleteConfirm}
+                title="Xóa phiên chat"
+                message="Bạn có chắc chắn muốn xóa phiên chat hiện tại? Hành động này không thể hoàn tác."
                 confirmText="Xóa"
                 cancelText="Hủy"
-                onConfirm={confirmClearChat}
-                onCancel={cancelClearChat}
+                onConfirm={handleDeleteChatSession}
+                onCancel={cancelDeleteChat}
                 type="danger"
             />
         </>
