@@ -21,6 +21,7 @@ export interface Message {
     timestamp: Date;
     role?: string;
     created_at?: string;
+    hasFiles?: boolean;
 }
 
 // Khai báo kiểu cho hội thoại

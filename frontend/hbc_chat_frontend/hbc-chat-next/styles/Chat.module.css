@@ -847,57 +847,6 @@
     background-color: rgba(var(--danger-color-rgb, 244, 67, 54), 0.1);
 }
 
-/* Đánh giá tin nhắn */
-.messageRating {
-    display: flex;
-    flex-direction: column;
-    margin-left: 10px;
-}
-
-.messageRatingLabel {
-    font-size: 12px;
-    opacity: 0.8;
-    margin-bottom: 3px;
-    color: var(--text-secondary);
-}
-
-.ratingStars {
-    display: flex;
-    gap: 4px;
-}
-
-.ratingStar {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23888888'%3E%3Cpath d='M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z'/%3E%3C/svg%3E");
-    background-size: cover;
-    cursor: pointer;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-}
-
-.ratingStar:hover,
-.ratingStar.active {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233498db'%3E%3Cpath d='M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z'/%3E%3C/svg%3E");
-    opacity: 1;
-}
-
-body.dark-mode .ratingStar.active {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232b89df'%3E%3Cpath d='M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z'/%3E%3C/svg%3E");
-}
-
-.ratingSubmitted {
-    font-size: 12px;
-    color: var(--success-color);
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.ratingSubmitted.show {
-    opacity: 1;
-}
-
 /* Animation */
 @keyframes fadeIn {
     from {

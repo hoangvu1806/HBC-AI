@@ -34,13 +34,6 @@ const ChatArea = () => {
         sendMessage(suggestion);
     };
 
-    // Hàm thay thế cho rateMessage đã bị loại bỏ
-    const handleRateMessage = (messageId: string, rating: number) => {
-        console.log(
-            `Đánh giá tin nhắn ${messageId} với ${rating} sao đã bị vô hiệu hóa`
-        );
-    };
-
     return (
         <div className={styles.chatContainer}>
             <div className={styles.chatMessages}>
@@ -55,14 +48,6 @@ const ChatArea = () => {
                             isUser={message.isUser}
                             timestamp={message.timestamp}
                             hasFiles={message.hasFiles}
-                            showRating={
-                                !message.isUser &&
-                                settings.showRatings &&
-                                !message.rating
-                            }
-                            onRate={(rating) =>
-                                handleRateMessage(message.id, rating)
-                            }
                         />
                     ))
                 )}

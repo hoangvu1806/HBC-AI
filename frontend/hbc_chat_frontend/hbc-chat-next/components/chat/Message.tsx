@@ -47,8 +47,6 @@ interface MessageProps {
     isUser: boolean;
     timestamp: Date;
     hasFiles?: boolean;
-    showRating?: boolean;
-    onRate?: (rating: number) => void;
     id?: string;
 }
 
@@ -57,12 +55,8 @@ const Message = ({
     isUser,
     timestamp,
     hasFiles = false,
-    showRating = false,
-    onRate,
     id,
 }: MessageProps) => {
-    const [rating, setRating] = useState(0);
-    const [submitted, setSubmitted] = useState(false);
     const markdownRef = useRef<HTMLDivElement>(null);
     const { messages, isWaitingResponse, isThinkModeActive } = useChat();
 
@@ -140,19 +134,6 @@ const Message = ({
         });
     };
 
-    const handleRate = (score: number) => {
-        setRating(score);
-        if (onRate) {
-            onRate(score);
-            setSubmitted(true);
-
-            // Reset the submitted state after a few seconds
-            setTimeout(() => {
-                setSubmitted(false);
-            }, 3000);
-        }
-    };
-
     return (
         <>
             <div
@@ -178,39 +159,6 @@ const Message = ({
 
                 <div className={styles.messageTime}>
                     {formatTime(timestamp)}
-
-                    {!isUser && showRating && (
-                        <div className={styles.messageRating}>
-                            {!submitted ? (
-                                <>
-                                    <div className={styles.messageRatingLabel}>
-                                        Đánh giá hữu ích?
-                                    </div>
-                                    <div className={styles.ratingStars}>
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                            <span
-                                                key={star}
-                                                className={`${
-                                                    styles.ratingStar
-                                                } ${
-                                                    rating >= star
-                                                        ? styles.active
-                                                        : ""
-                                                }`}
-                                                onClick={() => handleRate(star)}
-                                            />
-                                        ))}
-                                    </div>
-                                </>
-                            ) : (
-                                <div
-                                    className={`${styles.ratingSubmitted} ${styles.show}`}
-                                >
-                                    Cảm ơn bạn đã đánh giá!
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
 
