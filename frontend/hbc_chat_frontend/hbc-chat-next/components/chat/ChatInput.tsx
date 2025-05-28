@@ -7,6 +7,7 @@ interface ChatInputProps {
     isThinkModeActive: boolean;
     toggleThinkMode: () => void;
     isWaitingResponse: boolean;
+    aiTopic: string;
 }
 
 const ChatInput = ({
@@ -14,6 +15,7 @@ const ChatInput = ({
     isThinkModeActive,
     toggleThinkMode,
     isWaitingResponse,
+    aiTopic,
 }: ChatInputProps) => {
     const [message, setMessage] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -86,21 +88,23 @@ const ChatInput = ({
         <div className={styles.chatInputWrapper}>
             <div className={styles.chatInputContainer}>
                 <div className={styles.chatTools}>
-                    <button
-                        className={`${styles.thinkToggleBtn} ${
-                            isThinkModeActive ? styles.active : ""
-                        }`}
-                        title={
-                            isThinkModeActive
-                                ? "Tắt chế độ suy nghĩ"
-                                : "Bật chế độ suy nghĩ"
-                        }
-                        onClick={toggleThinkMode}
-                        aria-pressed={isThinkModeActive}
-                    >
-                        <FaLightbulb />
-                        <span>Think</span>
-                    </button>
+                    {aiTopic !== "NGHI_PHEP" && (
+                        <button
+                            className={`${styles.thinkToggleBtn} ${
+                                isThinkModeActive ? styles.active : ""
+                            }`}
+                            title={
+                                isThinkModeActive
+                                    ? "Tắt chế độ suy nghĩ"
+                                    : "Bật chế độ suy nghĩ"
+                            }
+                            onClick={toggleThinkMode}
+                            aria-pressed={isThinkModeActive}
+                        >
+                            <FaLightbulb />
+                            <span>Think</span>
+                        </button>
+                    )}
                 </div>
 
                 <textarea

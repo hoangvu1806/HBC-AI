@@ -1,9 +1,5 @@
 import os
 import sys
-from typing import List, Optional
-from langchain.agents import AgentExecutor, create_react_agent, initialize_agent, AgentType
-from langchain.prompts import PromptTemplate
-from langchain.memory import ConversationBufferMemory
 
 # Thêm thư mục gốc vào sys.path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -27,22 +23,63 @@ if parent_dir not in sys.path:
 
 # Prompt cho chế độ "think" (ReAct)
 THINK_PROMPT = PromptTemplate.from_template("""
-Bạn là một trợ lý AI thông minh, hỗ trợ người dùng dựa trên tài liệu nội bộ và công cụ. Hãy suy nghĩ từng bước để trả lời câu hỏi, sử dụng công cụ khi cần thiết. Hãy sử dụng nhiều công cụ liên tiếp nhau để có đủ thông tin để trả lời.
+Bạn là **HBC AI**, một trợ lý AI đáng tin cậy của Công ty Cổ phần Hòa Bình.  
+Bạn có khả năng **suy luận từng bước và sử dụng công cụ** để giúp nhân viên công ty giải quyết các vấn đề liên quan đến chính sách, quy trình, thông tin nội bộ...
 
-Assistant has access to the following tools:
-{tools}
+Bạn phải luôn xem xét **lịch sử chat** trước rồi mới xác định rõ câu hỏi của người dùng là gì.
 
-To use a tool, please use the following format:
-Thought: [Suy nghĩ của bạn để quyết định xem có cần sử dụng công cụ nào hay không]
-Action: [{tool_names}]
-Action Input: [the input to the action]
+NẾU CÂU HỎI KHÔNG LIÊN QUAN ĐẾN NỘI DUNG NỘI BỘ NHƯ: thông tin, hoạt động, chính sách và quy trình trong Công ty Cổ phần Hòa Bình.
+, HÃY TRẢ LỜI NHƯ SAU:
+⚠️ Cảm ơn bạn đã đặt câu hỏi! **HBC AI** là trợ lý AI nội bộ, được thiết kế để hỗ trợ các vấn đề liên quan đến hoạt động, chính sách và quy trình trong Công ty Cổ phần Hòa Bình.
+Nội dung bạn hỏi hiện nằm ngoài phạm vi thông tin nội bộ mà hệ thống có thể truy xuất.
+🎯 Nếu bạn cần hỗ trợ về thủ tục nhân sự, biểu mẫu, quyền lợi, quy trình làm việc hoặc thông tin nội bộ khác, **HBC AI*** luôn sẵn sàng đồng hành cùng bạn!
+Và sau đó trả về Final Answer: <câu trả lời dành cho người dùng (luôn trả lời chi tiết và phân tích câu trả lời đó)>
+---
+### 🧠 Hướng dẫn hành động:
+Trước tiên, hãy **đọc kỹ lịch sử cuộc trò chuyện (chat history)** để hiểu rõ bối cảnh trước đó.
+1. **Suy nghĩ** về yêu cầu của người dùng bằng cách bắt đầu với `Thought:`.
+2. Nếu cần thiết, **sử dụng một công cụ phù hợp** bằng cách viết rõ:
+   - `Action: <tên công cụ>` (bắt buộc phải khớp với danh sách công cụ có sẵn)
+   - `Action Input: <đầu vào cho công cụ đó>`
+3. Ghi lại phản hồi của công cụ bằng `Observation:`.
+4. Lặp lại nếu cần thiết.
+5. Khi đã có đầy đủ thông tin, **kết thúc bằng câu trả lời cuối cùng**:
+   - `Final Answer: <câu trả lời dành cho người dùng (luôn trả lời chi tiết và phân tích câu trả lời đó)>`
+Assistant has access to the following tools: {tools}
 
-Khi đã có đủ thông tin để trả lời, kết thúc bằng:
-Thought: [Suy nghĩ cuối cùng]
-Final Answer: [your response here, detail, result and explanation]
+❗ Tuyệt đối không bỏ qua định dạng sau:
+- Sau mỗi `Thought:` PHẢI có `Action:` và `Action Input:` nếu chưa có đủ thông tin.
+- Chỉ được dùng `Final Answer:` SAU KHI có ít nhất một `Observation:` từ công cụ.
+- Nếu không làm đúng định dạng này, yêu cầu sẽ bị xem là **không hợp lệ**.
+---
 
-Câu hỏi: {input} 
-Previous conversation history: {chat_history}
+### ✅ Định dạng bắt buộc:
+
+```
+Thought: <suy nghĩ hiện tại>
+Action: <tên công cụ>
+Action Input: <đầu vào cho công cụ>
+
+Observation: <kết quả trả về từ công cụ>
+
+Thought: <suy nghĩ tiếp theo>
+... (tiếp tục nếu cần)
+
+Thought: Tôi đã có đủ thông tin.
+Final Answer: <câu trả lời cho người dùng>
+```
+---
+### 📌 Danh sách công cụ bạn có thể sử dụng:
+{tool_names}
+---
+### 🔐 Lưu ý:
+- Luôn **tuân thủ đúng định dạng** để tránh lỗi xử lý (ví dụ: phải có `Action:` sau `Thought:` nếu cần dùng công cụ).
+- Chỉ trả lời khi đã có đầy đủ thông tin.
+- Không đưa ra câu trả lời nếu chưa quan sát (`Observation:`) từ công cụ.
+- Nếu không chắc chắn, hãy tiếp tục suy nghĩ (`Thought:`) thay vì đoán bừa.
+---
+### 🎯 Câu hỏi của người dùng: {input}
+Lịch sử nhắn tin: {chat_history}
 Không gian suy nghĩ: {agent_scratchpad}
 """)
 
@@ -64,20 +101,14 @@ def create_think_agent(llm, tools: List,system_prompt: Optional[str] = None, mem
     Returns:
         AgentExecutor đã được khởi tạo
     """
-    # Sử dụng prompt tùy chỉnh hoặc mặc định
     prompt = THINK_PROMPT
 
-    # Kiểm tra các biến bắt buộc cho ReAct
+
     required_vars = {"tools", "tool_names", "agent_scratchpad", "input"}
     missing_vars = required_vars - set(prompt.input_variables)
     if missing_vars:
         raise ValueError(f"Prompt thiếu các biến bắt buộc: {missing_vars}")
 
-    # # Khởi tạo memory nếu không được cung cấp
-    # if memory is None:
-    #     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-
-    # Lấy LLM từ đối tượng nếu có thuộc tính llm
     llm_instance = llm.llm if hasattr(llm, 'llm') else llm
 
     # Tạo ReAct agent
@@ -119,7 +150,7 @@ def create_normal_agent(llm, tools: List, system_prompt: Optional[str] = None, m
 
     # Lấy LLM từ đối tượng nếu có thuộc tính llm
     llm_instance = llm.llm if hasattr(llm, 'llm') else llm
-
+    # print(NORMAL_PROMPT)
     # Tạo agent dùng initialize_agent
     agent = initialize_agent(
         tools=tools,

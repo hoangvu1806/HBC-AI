@@ -134,8 +134,15 @@ class PostgresChatMemory:
             raise ValueError(error_msg)
         
         try:
+            # Lấy giới hạn tin nhắn từ biến môi trường
+            max_messages = int(os.getenv("MAX_CHAT_HISTORY_MESSAGES", "8"))
+            
             messages = self.message_repo.get_messages_by_session_id(self.current_session.id)
-            logger.info(f"Đã lấy {len(messages)} tin nhắn từ phiên chat ID: {self.current_session.id}")
+            total_messages = len(messages)
+            logger.info(f"Đã lấy {total_messages} tin nhắn gần nhất từ phiên chat ID: {self.current_session.id}")
+            
+            if total_messages == max_messages:
+                logger.info(f"Số lượng tin nhắn đã bị giới hạn ở mức {max_messages} tin nhắn gần nhất")
             
             # Chuyển đổi về format dễ sử dụng
             result = [

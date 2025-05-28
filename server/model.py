@@ -1,5 +1,5 @@
 import os, sys
-import json
+import tiktoken
 from typing import List, Dict, Any, Optional, Union
 from dotenv import load_dotenv
 
@@ -13,8 +13,8 @@ except ImportError:
 
 try:
     from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-except ImportError:
-    print("Warning: langchain_google_genai không khả dụng, chức năng Google Gemini sẽ không hoạt động")
+except ImportError as ie:
+    print(f"Warning: langchain_google_genai không khả dụng: {ie}")
     ChatGoogleGenerativeAI = None
     GoogleGenerativeAIEmbeddings = None
 
@@ -30,13 +30,9 @@ except ImportError:
 try:
     from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
     from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-    from langchain.memory import ConversationBufferMemory
-    from langchain.schema.runnable import RunnablePassthrough
-    from langchain.callbacks.manager import CallbackManager
-    from langchain.callbacks.base import BaseCallbackHandler
     from langchain_community.vectorstores import Qdrant
-except ImportError:
-    print("Warning: Một số thành phần LangChain core không khả dụng")
+except ImportError as ie:
+    print(f"Warning: Một số thành phần LangChain core không khả dụng: {ie}")
 
 # Thêm thư mục gốc vào sys.path để import các module
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -50,18 +46,6 @@ load_dotenv()
 
 # Thêm import cho PostgresChatMemory
 from chat_memory import PostgresChatMemory
-
-class StreamCallbackHandler(BaseCallbackHandler):
-    """Callback handler cho stream output"""
-    
-    def __init__(self):
-        self.text = ""
-        
-    def on_llm_new_token(self, token: str, **kwargs) -> None:
-        """Xử lý token mới từ LLM"""
-        self.text += token
-        return token
-
 class LLM:
     """
     Lớp quản lý tương tác với các mô hình ngôn ngữ lớn (LLM) sử dụng LangChain
@@ -70,8 +54,8 @@ class LLM:
     def __init__(self, 
                  model_name: str = "gpt-4o-mini", 
                  api_key: Optional[str] = None,
-                 temperature: float = 0.7,
-                 max_tokens: int = 4096,
+                 temperature: float = 0.4,
+                 max_tokens: int = 16384,
                  provider: str = "openai",
                  system_prompt: Optional[str] = None,
                  system_prompt_file: Optional[str] = None,
@@ -133,26 +117,23 @@ class LLM:
                 self.pg_memory = None
     
         
-        # Fallback khi không có provider phù hợp
-        self.is_fallback_mode = False
-        
         # Khởi tạo LLM model dựa trên provider
         if provider == "openai":
             if ChatOpenAI is None:
-                self.is_fallback_mode = True
                 print("Warning: Sử dụng Fallback Mode cho OpenAI")
             else:
                 # Lấy API key
                 self.api_key = api_key or os.getenv("OPENAI_KEY_APHONG")
                 if not self.api_key:
                     print("Warning: OpenAI API key không được cung cấp")
-                    self.is_fallback_mode = True
                 else:
                     # Khởi tạo model LLM 
                     self.llm = ChatOpenAI(
                         model_name=model_name,
                         temperature=temperature,
                         max_tokens=max_tokens,
+                        streaming=True,
+                        callbacks=[StreamingStdOutCallbackHandler()],
                         api_key=self.api_key
                     )
                     
@@ -222,10 +203,6 @@ class LLM:
             self.is_fallback_mode = True
             print(f"Provider không được hỗ trợ: {provider}")
         
-        # Nếu là fallback mode, tạo model giả
-        if self.is_fallback_mode:
-            self.llm = FallbackLLM(self.system_prompt)
-            self.embedding_model = FallbackEmbedding()
         
         # Lịch sử hội thoại
         self.history = []
@@ -304,6 +281,7 @@ class LLM:
              history: Optional[List[Dict[str, str]]] = None,
              system_prompt: Optional[str] = None,
              temperature: Optional[float] = None,
+             user_messages: str = None,
              max_tokens: Optional[int] = None) -> Dict[str, Any]:
         """
         Gửi prompt đến LLM và nhận phản hồi
@@ -360,21 +338,16 @@ class LLM:
             "content": response.content,
             "finish_reason": "stop",  # LangChain không cung cấp finish_reason
             "model": self.model_name,
-            "usage": {
-                "prompt_tokens": 0,  # LangChain không cung cấp thông tin này
-                "completion_tokens": 0,
-                "total_tokens": 0
-            }
         }
         
         # Cập nhật lịch sử
-        self.history.append({"role": "user", "content": prompt})
+        self.history.append({"role": "user", "content": user_messages})
         self.history.append({"role": "assistant", "content": result["content"]})
         
         # Cập nhật lịch sử trong PostgreSQL nếu đang sử dụng
         if self.use_postgres_memory and self.pg_memory and self.pg_memory.current_session:
             try:
-                self.pg_memory.add_message("user", prompt)
+                self.pg_memory.add_message("user", user_messages)
                 self.pg_memory.add_message("assistant", result["content"])
             except Exception as e:
                 print(f"Lỗi khi cập nhật lịch sử PostgreSQL: {e}")
@@ -420,6 +393,73 @@ class LLM:
                 return self.history.copy()
         else:
             return self.history.copy()
+    
+    def get_sessions_by_email(self, email: str) -> List[Dict[str, Any]]:
+        """
+        Lấy danh sách tất cả phiên chat của một email
+        
+        Args:
+            email: Email người dùng
+            
+        Returns:
+            Danh sách các phiên chat dưới dạng dictionaries
+        """
+        if not self.use_postgres_memory or not self.pg_memory:
+            print("PostgreSQL memory không được kích hoạt, không thể lấy danh sách phiên chat")
+            return []
+            
+        try:
+            # Sử dụng repository để lấy danh sách phiên chat
+            sessions = self.pg_memory.session_repo.get_sessions_by_email(email)
+            
+            # Chuẩn bị kết quả
+            result = []
+            for session in sessions:
+                result.append({
+                    "session_id": session.id,
+                    "session_name": session.session_name,
+                    "expertor": session.expertor,
+                    "original_name": session.original_name,
+                    "created_at": session.created_at.isoformat() if session.created_at else None,
+                    "updated_at": session.updated_at.isoformat() if session.updated_at else None
+                })
+                
+            return result
+        except Exception as e:
+            print(f"Lỗi khi lấy danh sách phiên chat: {e}")
+            return []
+    
+    def get_history_by_session_id(self, session_id: str) -> List[Dict[str, str]]:
+        """
+        Lấy lịch sử hội thoại của một phiên chat cụ thể
+        
+        Args:
+            session_id: ID của phiên chat
+            
+        Returns:
+            Danh sách các tin nhắn dưới dạng dictionaries
+        """
+        if not self.use_postgres_memory or not self.pg_memory:
+            print("PostgreSQL memory không được kích hoạt, không thể lấy lịch sử phiên chat")
+            return []
+            
+        try:
+            # Lấy tất cả tin nhắn của phiên chat
+            messages = self.pg_memory.message_repo.get_messages_by_session_id(session_id)
+            
+            # Chuyển đổi về format chuẩn
+            result = []
+            for msg in messages:
+                result.append({
+                    "role": msg.role,
+                    "content": msg.content,
+                    "created_at": msg.created_at.isoformat() if msg.created_at else None
+                })
+                
+            return result
+        except Exception as e:
+            print(f"Lỗi khi lấy lịch sử phiên chat: {e}")
+            return []
     
     def init_session(self, session_name: str, email: str = "guest", expertor: str = "default") -> Optional[str]:
         """
@@ -467,6 +507,66 @@ class LLM:
             error_msg = f"Lỗi khi khởi tạo phiên chat PostgreSQL: {e}\n{traceback.format_exc()}"
             print(error_msg)
             return None
+    
+    def delete_session(self, session_name: str, email: str, expertor: str = "HCNS") -> bool:
+        """
+        Xóa một phiên chat theo tên, email và expertor
+        
+        Args:
+            session_name: Tên phiên chat
+            email: Email người dùng
+            expertor: Tên chủ đề của chatbot (mặc định: "HCNS")
+            
+        Returns:
+            True nếu xóa thành công, False nếu không tìm thấy hoặc có lỗi
+        """
+        if not self.use_postgres_memory:
+            print(f"Postgres memory không được kích hoạt, không thể xóa phiên chat: {session_name}")
+            return False
+            
+        if not self.pg_memory:
+            print(f"PostgresChatMemory chưa được khởi tạo, không thể xóa phiên chat: {session_name}")
+            return False
+            
+        try:
+            print(f"Đang xóa phiên chat: {session_name} (email: {email}, expertor: {expertor})")
+            
+            # Kiểm tra phiên chat có tồn tại không
+            sessions = self.pg_memory.session_repo.get_sessions_by_email(email)
+            session_id = None
+            print(sessions)
+            for session in sessions:
+                if session.session_name == session_name and session.expertor == expertor:
+                    session_id = session.id
+                    break
+            
+            if not session_id:
+                print(f"Không tìm thấy phiên chat: {session_name} (email: {email}, expertor: {expertor})")
+                return False
+                
+            # Xóa phiên chat theo ID
+            is_deleted = self.pg_memory.session_repo.delete_session(session_id)
+            
+            if is_deleted:
+                print(f"Đã xóa phiên chat: {session_name}")
+                # Nếu phiên chat hiện tại bị xóa, clear lịch sử trên bộ nhớ
+                if (
+                    self.pg_memory.current_session and 
+                    self.pg_memory.current_session.session_name == session_name and
+                    self.pg_memory.current_session.email == email and
+                    self.pg_memory.current_session.expertor == expertor
+                ):
+                    self.history = []
+                    self.pg_memory.current_session = None
+            else:
+                print(f"Không thể xóa phiên chat: {session_name} (email: {email}, expertor: {expertor})")
+                
+            return is_deleted
+        except Exception as e:
+            import traceback
+            error_msg = f"Lỗi khi xóa phiên chat: {e}\n{traceback.format_exc()}"
+            print(error_msg)
+            return False
     
     def embedding(self, text: str) -> List[float]:
         """
@@ -534,17 +634,9 @@ class LLM:
             return [0.0] * 3072
 
     def get_token_count(self, text: str) -> int:
-        """
-        Ước tính số lượng token trong văn bản (ước lượng đơn giản)
-        
-        Args:
-            text: Văn bản cần đếm token
-            
-        Returns:
-            Số lượng token ước tính
-        """
-        # Ước lượng đơn giản: khoảng 4 ký tự = 1 token
-        return len(text) // 4
+        encoding = tiktoken.get_encoding("cl100k_base")  # OK ✅
+        tokens = encoding.encode(text)
+        return len(tokens)
 
     def stream_chat(self, 
                    prompt: str, 
@@ -660,61 +752,15 @@ class LLM:
             except Exception as e:
                 print(f"Lỗi khi cập nhật lịch sử PostgreSQL: {e}")
 
-class FallbackLLM:
-    """LLM giả để sử dụng khi không có LLM thực"""
-    
-    def __init__(self, system_prompt):
-        self.system_prompt = system_prompt
-    
-    def invoke(self, messages):
+    def get_session_id(self) -> Optional[str]:
         """
-        Tạo phản hồi giả
+        Lấy ID của phiên chat hiện tại
         
-        Args:
-            messages: Danh sách tin nhắn
-            
         Returns:
-            Phản hồi giả
+            ID của phiên chat hoặc None nếu không có phiên chat nào được khởi tạo
         """
-        # Trích xuất prompt từ tin nhắn cuối cùng
-        if isinstance(messages, list) and len(messages) > 0:
-            last_message = messages[-1]
-            if hasattr(last_message, 'content'):
-                prompt = last_message.content
-            elif isinstance(last_message, dict) and 'content' in last_message:
-                prompt = last_message['content']
-            else:
-                prompt = str(messages[-1])
-        else:
-            prompt = str(messages)
-        
-        # Tạo phản hồi đơn giản
-        response = SimpleResponse(
-            content=f"[FALLBACK MODE] Không thể gọi LLM thực. Prompt của bạn là: '{prompt}'. "
-                    f"Vui lòng kiểm tra cài đặt thư viện và API key."
-        )
-        
-        return response
-
-class SimpleResponse:
-    """Class giả lập phản hồi từ LLM"""
-    
-    def __init__(self, content):
-        self.content = content
-
-class FallbackEmbedding:
-    """Embedding giả khi không có embedding thực"""
-    
-    def embed_query(self, text):
-        """
-        Tạo vector embedding giả
-        
-        Args:
-            text: Văn bản cần tạo embedding
+        if not self.use_postgres_memory or not self.pg_memory or not self.pg_memory.current_session:
+            return None
             
-        Returns:
-            Vector embedding giả (toàn số 0)
-        """
-        print("Warning: Sử dụng embedding giả")
-        # Tạo vector zero
-        return [0.0] * 1536  # Kích thước phổ biến
+        return self.pg_memory.current_session.id
+

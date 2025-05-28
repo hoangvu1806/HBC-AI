@@ -54,7 +54,7 @@ class RAGAgent:
             system_prompt=system_prompt,
             system_prompt_file=system_prompt_file,
             provider=provider,
-            use_postgres_memory=use_postgres_memory
+            use_postgres_memory=use_postgres_memory,
         )
 
         # Khởi tạo Qdrant client
@@ -125,10 +125,14 @@ Trả lời trực tiếp vào câu hỏi.
         final_response = self.llm.chat(
             prompt=final_prompt,
             history=self.llm.get_history(),
-            system_prompt=self.llm.system_prompt
+            system_prompt=self.llm.system_prompt,
+            user_messages=message
         )
         result = final_response["content"]
         
+        # Đếm tokens
+        input_tokens = self.llm.get_token_count(final_prompt)
+        output_tokens = self.llm.get_token_count(result)
         # Cập nhật lịch sử hội thoại
         self.llm.history.append({"role": "user", "content": message})
         self.llm.history.append({"role": "assistant", "content": result})
@@ -136,27 +140,76 @@ Trả lời trực tiếp vào câu hỏi.
         output = {
             "result": result,
             "tool_usages": self.tool_usages,
-            "success": True
+            "success": True,
+            "usage": {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens
+            }
         }
         self.tool_usages = []
         return output
-
-    async def stream_chat(self, message: str, mode: str = "normal"):
+    
+    def chat_stream(self, message: str, mode: str = "normal") -> Dict[str, Any]:
         """
-        Stream phản hồi từ agent, chọn chế độ 'think' hoặc 'normal'
+        Gửi tin nhắn đến agent và nhận phản hồi, chọn chế độ 'think' hoặc 'normal'
 
         Args:
             message: Tin nhắn người dùng
             mode: Chế độ agent ('think' hoặc 'normal')
 
-        Yields:
-            Từng chunk của phản hồi
+        Returns:
+            Dict chứa kết quả và metadata
         """
-        response = self.chat(message, mode=mode)
-        result = response["result"]
-        for i in range(0, len(result), 3):
-            yield result[i:i+3]
-            await asyncio.sleep(0.01)
+        # Chọn agent dựa trên mode
+        if mode == "think":
+            if self.think_agent is None:
+                self.think_agent = self._create_think_agent()
+            agent = self.think_agent
+        else:  # Mặc định là "normal"
+            if self.normal_agent is None:
+                self.normal_agent = self._create_normal_agent()
+            agent = self.normal_agent
+
+        # Gọi agent với input và lịch sử hội thoại
+        response = agent.invoke({"input": message, "chat_history": self.llm.get_history()})
+        agent_result = response["output"] if isinstance(response, dict) and "output" in response else str(response)
+        
+        # Đưa kết quả từ agent qua LLM để tạo câu trả lời cuối cùng
+        final_prompt = f"""
+Dựa trên câu hỏi của tôi:
+{message}
+và kết quả phân tích từ agent:
+{agent_result}
+Hãy tạo một câu trả lời cuối cùng, chi tiết, rõ ràng.
+Trả lời trực tiếp vào câu hỏi.
+"""
+        final_response = self.llm.chat_stream(
+            prompt=final_prompt,
+            history=self.llm.get_history(),
+            system_prompt=self.llm.system_prompt,
+            user_messages=message
+        )
+            
+        # result = final_response["content"]
+        
+        # Đếm tokens
+        # input_tokens = self.llm.get_token_count(final_prompt)
+        # output_tokens = self.llm.get_token_count(result)
+        # Cập nhật lịch sử hội thoại
+        self.llm.history.append({"role": "user", "content": message})
+        self.llm.history.append({"role": "assistant", "content": "result"})
+
+        output = {
+            # "result": result,
+            "tool_usages": self.tool_usages,
+            "success": True,
+            "usage": {
+                "input_tokens": 0,
+                "output_tokens": 0
+            }
+        }
+        self.tool_usages = []
+        return final_response
 
     def clear_memory(self):
         """Xóa lịch sử hội thoại"""
@@ -166,7 +219,7 @@ Trả lời trực tiếp vào câu hỏi.
 if __name__ == "__main__":
     agent = RAGAgent(
         model_name=os.getenv("MODEL_NAME", "gpt-4o-mini"),
-        temperature=float(os.getenv("TEMPERATURE", "0.7")),
+        temperature=float(os.getenv("TEMPERATURE", "0.4")),
         qdrant_host=os.getenv("QDRANT_HOST", "localhost"),
         qdrant_port=int(os.getenv("QDRANT_PORT", "6333")),
         collection_name=os.getenv("QDRANT_COLLECTION", "HBC_P_HCNS_KNOWLEDGE_BASE"),

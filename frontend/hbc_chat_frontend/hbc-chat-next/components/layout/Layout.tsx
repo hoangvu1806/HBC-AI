@@ -134,7 +134,7 @@ const Layout = ({ children }: LayoutProps) => {
                     width: isMobile ? "85%" : "280px",
                     maxWidth: isMobile ? "300px" : "280px",
                     height: "100vh",
-                    zIndex: 100,
+                    zIndex: 1020,
                     transform: sidebarVisible
                         ? "translateX(0)"
                         : "translateX(-100%)",
@@ -172,7 +172,7 @@ const Layout = ({ children }: LayoutProps) => {
                 onClick={handleToggleSidebar}
                 style={{
                     display: isMobile && sidebarVisible ? "block" : "none",
-                    zIndex: 99,
+                    zIndex: 999,
                     backgroundColor: "rgba(0, 0, 0, 0.3)",
                 }}
             />

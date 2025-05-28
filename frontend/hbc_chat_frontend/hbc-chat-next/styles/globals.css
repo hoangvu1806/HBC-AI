@@ -231,7 +231,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: transparent;
+    background: transparent !important;
     border-radius: 10px;
 }
 

@@ -3,7 +3,7 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "next dev -p 3030",
+        "dev": "next dev -p 3031",
         "build": "next build",
         "start": "next start -p 3030",
         "lint": "next lint"
@@ -11,6 +11,7 @@
     "dependencies": {
         "@types/crypto-js": "^4.2.2",
         "@types/react-beautiful-dnd": "^13.1.8",
+        "axios": "^1.9.0",
         "crypto-js": "^4.2.0",
         "highlight.js": "^11.9.0",
         "marked": "^15.0.8",

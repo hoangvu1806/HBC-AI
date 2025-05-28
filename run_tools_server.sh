@@ -36,7 +36,8 @@ fi
 # Chạy server với log định hướng vào thư mục logs
 echo "Khởi động Tools Server trên port $SERVER_PORT..."
 cd .. # Di chuyển lên thư mục gốc để uvicorn có thể tìm thấy module tools
-uvicorn tools.tools_server:app --host 0.0.0.0 --port $SERVER_PORT --reload --log-level info > logs/tools_server.log 2>&1
+
+ --log-level info > logs/tools_server.log 2>&1
 
 # Xử lý khi dừng script
 trap 'echo "Dừng server..."; pkill -f "uvicorn tools.tools_server:app"' SIGINT SIGTERM 

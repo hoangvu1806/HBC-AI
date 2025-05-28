@@ -215,6 +215,135 @@ class ChatSessionRepository(PostgresRepository):
         finally:
             cursor.close()
 
+    def get_sessions_by_email(self, email: str) -> List[ChatSession]:
+        """
+        Lấy danh sách tất cả phiên chat của một email
+        
+        Args:
+            email: Email người dùng
+            
+        Returns:
+            Danh sách các phiên chat
+        """
+        conn = self.get_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            logger.info(f"Đang lấy danh sách phiên chat cho email: {email}")
+            
+            cursor.execute(
+                """
+                SELECT * FROM chat_sessions 
+                WHERE email = %s
+                ORDER BY updated_at DESC
+                """,
+                (email,)
+            )
+            results = cursor.fetchall()
+            
+            sessions = []
+            for result in results:
+                metadata = json.loads(result["metadata"]) if result["metadata"] else None
+                session = ChatSession(
+                    id=result["id"],
+                    session_name=result["session_name"],
+                    email=result["email"],
+                    expertor=result["expertor"],
+                    original_name=result["original_name"],
+                    created_at=result["created_at"],
+                    updated_at=result["updated_at"],
+                    metadata=metadata
+                )
+                sessions.append(session)
+            
+            logger.info(f"Đã tìm thấy {len(sessions)} phiên chat cho email: {email}")
+            return sessions
+        except Exception as e:
+            logger.error(f"Lỗi khi lấy danh sách phiên chat: {e}")
+            return []
+        finally:
+            cursor.close()
+
+    def delete_session(self, session_id: str) -> bool:
+        """
+        Xóa một phiên chat và tất cả tin nhắn liên quan
+        
+        Args:
+            session_id: ID của phiên chat cần xóa
+            
+        Returns:
+            True nếu xóa thành công, False nếu thất bại
+        """
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            # Bắt đầu transaction
+            conn.autocommit = False
+            
+            # Xóa tất cả tin nhắn của phiên chat
+            cursor.execute(
+                "DELETE FROM chat_messages WHERE session_id = %s",
+                (session_id,)
+            )
+            message_count = cursor.rowcount
+            logger.info(f"Đã xóa {message_count} tin nhắn của phiên chat {session_id}")
+            
+            # Xóa phiên chat
+            cursor.execute(
+                "DELETE FROM chat_sessions WHERE id = %s",
+                (session_id,)
+            )
+            session_deleted = cursor.rowcount > 0
+            
+            # Commit nếu xóa thành công
+            if session_deleted:
+                conn.commit()
+                logger.info(f"Đã xóa phiên chat {session_id}")
+            else:
+                conn.rollback()
+                logger.warning(f"Không tìm thấy phiên chat {session_id} để xóa")
+            
+            return session_deleted
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Lỗi khi xóa phiên chat: {e}")
+            return False
+        finally:
+            conn.autocommit = True
+            cursor.close()
+            
+    def delete_session_by_name_and_email(self, session_name: str, email: str) -> bool:
+        """
+        Xóa một phiên chat và tất cả tin nhắn liên quan dựa trên tên và email
+        
+        Args:
+            session_name: Tên phiên chat
+            email: Email người dùng
+            
+        Returns:
+            True nếu xóa thành công, False nếu thất bại
+        """
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            # Tìm phiên chat trước
+            cursor.execute(
+                "SELECT id FROM chat_sessions WHERE session_name = %s AND email = %s",
+                (session_name, email)
+            )
+            result = cursor.fetchone()
+            
+            if not result:
+                logger.warning(f"Không tìm thấy phiên chat với tên {session_name} và email {email}")
+                return False
+                
+            session_id = result[0]
+            return self.delete_session(session_id)
+        except Exception as e:
+            logger.error(f"Lỗi khi tìm và xóa phiên chat: {e}")
+            return False
+        finally:
+            cursor.close()
+
 
 class ChatMessageRepository(PostgresRepository):
     def create_message(self, message: ChatMessage) -> str:
@@ -251,13 +380,17 @@ class ChatMessageRepository(PostgresRepository):
         conn = self.get_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         try:
+            # Lấy giới hạn tin nhắn từ biến môi trường
+            max_messages = int(os.getenv("MAX_CHAT_HISTORY_MESSAGES", "8"))
+            
             cursor.execute(
                 """
                 SELECT * FROM chat_messages 
                 WHERE session_id = %s
-                ORDER BY created_at ASC
+                ORDER BY created_at DESC
+                LIMIT %s
                 """,
-                (session_id,)
+                (session_id, max_messages)
             )
             results = cursor.fetchall()
             
@@ -272,6 +405,9 @@ class ChatMessageRepository(PostgresRepository):
                     created_at=row["created_at"],
                     metadata=metadata
                 ))
+            
+            # Đảo ngược danh sách để lấy theo thứ tự cũ (từ cũ đến mới)
+            messages.reverse()
             
             return messages
         finally:

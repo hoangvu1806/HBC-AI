@@ -5,6 +5,7 @@ import {
     useEffect,
     ReactNode,
 } from "react";
+import { useSettings } from "@/contexts/SettingsContext";
 
 // Khai báo kiểu dữ liệu cho CryptoJS
 declare global {
@@ -71,6 +72,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     const [isWaitingResponse, setIsWaitingResponse] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<any>(null);
+    const { settings } = useSettings();
 
     // Khởi tạo từ localStorage khi component được mount
     useEffect(() => {
@@ -413,8 +415,20 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
     // Bật/tắt chế độ Think
     const toggleThinkMode = () => {
+        // Nếu là NGHI_PHEP, luôn tắt chế độ think
+        if (settings.aiTopic === "NGHI_PHEP") {
+            setIsThinkModeActive(false);
+            return;
+        }
         setIsThinkModeActive(!isThinkModeActive);
     };
+
+    // Hàm khác để đảm bảo isThinkModeActive luôn false khi aiTopic là NGHI_PHEP
+    useEffect(() => {
+        if (settings.aiTopic === "NGHI_PHEP" && isThinkModeActive) {
+            setIsThinkModeActive(false);
+        }
+    }, [settings.aiTopic]);
 
     // Gửi tin nhắn
     const sendMessage = async (content: string) => {
@@ -507,6 +521,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         try {
             const apiUrl = "https://aiapi.hbc.com.vn/api/chat";
             const accessToken = getCookie("access_token");
+            const refreshToken = getCookie("refresh_token");
             if (!accessToken) {
                 throw new Error("Không tìm thấy access token");
             }
@@ -521,22 +536,21 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
             // Lấy thông tin người dùng
             let userEmail = "guest";
+            let userName = "guest";
             if (user) {
+                console.log(user);
                 userEmail = user.emailAddress || "guest";
-            } else {
-                const userData = localStorage.getItem("user");
-                if (userData) {
-                    const parsedUser = JSON.parse(userData);
-                    userEmail = parsedUser.emailAddress || "guest";
-                }
+                userName = user.displayName || "guest";
             }
 
             // Chuẩn bị dữ liệu
             const formData = new FormData();
-            formData.append("topic", "HCNS");
+            formData.append("topic", settings.aiTopic);
             formData.append("user_email", userEmail);
+            formData.append("user_name", userName);
             formData.append("prompt", message);
             formData.append("session_name", sessionName);
+            formData.append("refresh_token", refreshToken || "");
             formData.append("mode", isThinkModeActive ? "think" : "normal");
 
             // Gửi yêu cầu

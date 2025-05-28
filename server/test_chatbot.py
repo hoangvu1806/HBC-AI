@@ -41,7 +41,7 @@ class ChatbotTester:
         print("\n=== Khởi tạo RAG Agent ===")
         try:
             self.agent = RAGAgent(
-                model_name=os.getenv("MODEL_NAME", "gpt-4o-mini"),
+                model_name=os.getenv("MODEL_NAME"),
                 temperature=float(os.getenv("TEMPERATURE", "0.7")),
                 qdrant_host=os.getenv("QDRANT_HOST", "localhost"),
                 qdrant_port=int(os.getenv("QDRANT_PORT", "6333")),

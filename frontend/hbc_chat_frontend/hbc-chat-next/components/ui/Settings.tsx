@@ -18,8 +18,8 @@ interface SettingsProps {
         fontSize: "small" | "medium" | "large";
         aiTopic: string;
     };
-    updateSettings: (key: string, value: any) => void;
     exportChat: () => void;
+    updateSettings: (key: string, value: any) => void;
     clearHistory: () => void;
 }
 
@@ -27,8 +27,8 @@ const Settings = ({
     isOpen,
     closeSettings,
     settings,
-    updateSettings,
     exportChat,
+    updateSettings,
     clearHistory,
 }: SettingsProps) => {
     const [showConfirmClear, setShowConfirmClear] = useState(false);
@@ -105,6 +105,7 @@ const Settings = ({
                                 }
                             >
                                 <option value="HCNS">HCNS</option>
+                                <option value="NGHI_PHEP">Hỗ trợ nghỉ phép</option>
                                 {/* <option value="IT">IT</option>
                                 <option value="KT">Kế toán</option>
                                 <option value="KINH_DOANH">Kinh doanh</option>
@@ -117,12 +118,6 @@ const Settings = ({
                         <h4>
                             <FiClock /> Lịch sử
                         </h4>
-                        <button
-                            className={styles.btnSecondary}
-                            onClick={exportChat}
-                        >
-                            <FaDownload /> Xuất lịch sử trò chuyện
-                        </button>
                         <button
                             className={styles.btnDanger}
                             onClick={handleClearHistory}

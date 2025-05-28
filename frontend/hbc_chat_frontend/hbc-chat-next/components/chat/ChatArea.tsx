@@ -51,7 +51,7 @@ const ChatArea = () => {
                         />
                     ))
                 )}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} style={{ paddingBottom: "8px" }} />
             </div>
 
             <ChatInput
@@ -59,6 +59,7 @@ const ChatArea = () => {
                 isThinkModeActive={isThinkModeActive}
                 toggleThinkMode={toggleThinkMode}
                 isWaitingResponse={isWaitingResponse}
+                aiTopic={settings.aiTopic}
             />
         </div>
     );
