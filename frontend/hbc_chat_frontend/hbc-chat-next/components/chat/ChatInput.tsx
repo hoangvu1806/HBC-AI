@@ -102,7 +102,7 @@ const ChatInput = ({
                             aria-pressed={isThinkModeActive}
                         >
                             <FaLightbulb />
-                            <span>Think</span>
+                            <span>Suy luận</span>
                         </button>
                     )}
                 </div>

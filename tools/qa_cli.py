@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import os
 import sys
-import json
 import argparse
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any
 import logging
 from tabulate import tabulate
 

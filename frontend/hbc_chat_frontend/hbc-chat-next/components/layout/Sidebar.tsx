@@ -77,20 +77,9 @@ const Sidebar = ({
         }
     };
 
-    // Tạo icon ngẫu nhiên cho mỗi cuộc hội thoại
+    // Sử dụng cùng một icon cho tất cả các cuộc hội thoại
     const getConversationIcon = (id: string) => {
-        // Dùng id để cố định icon cho mỗi cuộc hội thoại
-        const iconIndex = id.charCodeAt(0) % 3;
-        switch (iconIndex) {
-            case 0:
-                return <FaCommentDots />;
-            case 1:
-                return <FaClock />;
-            case 2:
-                return <FaStar />;
-            default:
-                return <FaCommentDots />;
-        }
+        return <FaCommentDots />;
     };
 
     return (

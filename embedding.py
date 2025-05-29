@@ -10,8 +10,6 @@ from qdrant_client.models import PointStruct, VectorParams
 # Load environment variables từ file .env
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_KEY_APHONG")
-# QDRANT_API_KEY = os.getenv("QDRANT_KEY_HBC_HCNS")
-# QDRANT_HOST = "https://30293fb2-6de0-4400-b89f-80626836b5ea.us-east4-0.gcp.cloud.qdrant.io"
 
 # Khởi tạo client cho OpenAI và Qdrant
 client = openai.OpenAI(api_key=OPENAI_API_KEY,)

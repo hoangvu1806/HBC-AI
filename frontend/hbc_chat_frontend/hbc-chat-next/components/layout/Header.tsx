@@ -231,9 +231,10 @@ const Header = ({
                         >
                             {settings.darkMode ? <FaSun /> : <FaMoon />}
                         </button>
-                        <button onClick={handleOpenSettings} title="Cài đặt">
+                        {/* Nút setting đã bị ẩn theo yêu cầu */}
+                        {/* <button onClick={handleOpenSettings} title="Cài đặt">
                             <FaCog />
-                        </button>
+                        </button> */}
                     </div>
 
                     <div className={styles.userAvatar}>

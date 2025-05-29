@@ -61,12 +61,12 @@ class AgentTools:
         self._tools = [
             Tool(
                 name="search_documents",
-                description="Tìm kiếm thông tin trong cơ sở dữ liệu tài liệu. Tool này thường được sử dụng đầu tiên.",
+                description="Tìm kiếm thông tin trong cơ sở dữ liệu tài liệu. Tool này thường được sử dụng để tìm thông tin (Trừ những câu hỏi giao tiếp thông thường). Nếu câu hỏi của bạn không liên quan đến nội dung nội bộ của công ty, hãy sử dụng công cụ này để tìm kiếm thông tin trên internet. Đầu vào là câu truy vấn chung chung, không quá chi tiết",
                 func=self.search_documents,
             ),
             Tool(
                 name="search_qa",
-                description="Tìm kiếm thông tin trong cơ sở dữ liệu câu hỏi và câu trả lời Q&A đối với các câu hỏi ngắn, đơn giản. ",
+                description="Tìm kiếm thông tin trong cơ sở dữ liệu câu hỏi và câu trả lời Q&A. Đầu vào là câu truy vấn chung chung, không quá chi tiết. Tool này thường được dùng sau khi sử dụng tool search_documents không có kết quả hoặc không đủ thông tin.",
                 func=self.search_qa
             ),
             Tool(
@@ -81,13 +81,13 @@ class AgentTools:
             ),
             Tool(
                 name="get_company_info",
-                description="Lấy thông tin cơ bản của công ty như giới thiệu, lịch sử, sứ mệnh, sản phẩm,...",
+                description="Lấy thông tin cơ bản của công ty liên quan đến giới thiệu, lịch sử, sứ mệnh, sản phẩm,...",
                 func=self.get_company_info
             ),
             Tool(
                 name="Google Search",
                 func=self.web_search,
-                description="Useful for answering questions about current events or the internet."
+                description="Sử dụng tool này để tìm kiếm thông tin trên internet, đầu vào là nội dung cần tìm kiếm. Tool này thường được sử dụng khi sử dụng tool search_qa và search_documents không có kết quả hoặc không đủ thông tin."
             )
         ]
     

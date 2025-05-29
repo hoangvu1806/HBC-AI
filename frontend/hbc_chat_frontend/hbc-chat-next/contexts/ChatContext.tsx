@@ -6,6 +6,8 @@ import {
     ReactNode,
 } from "react";
 import { useSettings } from "@/contexts/SettingsContext";
+import { callChatStreamAPI, callChatAPI } from "@/lib/api";
+import SessionExpiredModal from "@/components/ui/SessionExpiredModal";
 
 // Khai báo kiểu dữ liệu cho CryptoJS
 declare global {
@@ -72,6 +74,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     const [isWaitingResponse, setIsWaitingResponse] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<any>(null);
+    const [showSessionExpired, setShowSessionExpired] = useState(false);
     const { settings } = useSettings();
 
     // Khởi tạo từ localStorage khi component được mount
@@ -173,9 +176,11 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
     // Hàm chuyển hướng đến trang đăng nhập
     const redirectToLogin = () => {
-        window.location.href = `${ID_HBC_LOGIN_URL}?app_redirect_url=${btoa(
-            window.location.href
-        )}`;
+        // Thay vì chuyển hướng ngay, hiển thị modal
+        setShowSessionExpired(true);
+        // window.location.href = `${ID_HBC_LOGIN_URL}?app_redirect_url=${btoa(
+        //     window.location.href
+        // )}`;
     };
 
     // Hàm kiểm tra access token
@@ -205,6 +210,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             return await response.json();
         } catch (error) {
             console.error("Lỗi kiểm tra token:", error);
+            // Hiển thị modal phiên hết hạn thay vì thông báo lỗi
+            setShowSessionExpired(true);
             throw error;
         }
     };
@@ -249,6 +256,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             return data.access_token;
         } catch (error) {
             console.error("Lỗi làm mới token:", error);
+            // Hiển thị modal phiên hết hạn thay vì chỉ log lỗi
+            setShowSessionExpired(true);
             throw error;
         }
     };
@@ -463,150 +472,260 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             )
         );
 
-        // Gọi API để lấy phản hồi
-        try {
-            const botResponse = await callChatAPI(content);
+        // Tạo tin nhắn bot trống để stream
+        const botMessageId = `msg-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const botMessage: Message = {
+            id: botMessageId,
+            content: "",
+            isUser: false,
+            timestamp: new Date(),
+        };
 
-            if (botResponse === null) {
+        // Thêm tin nhắn bot trống vào danh sách tin nhắn
+        setMessages((prevMessages) => [...prevMessages, botMessage]);
+
+        // Cập nhật tin nhắn trong conversations
+        setConversations((prevConversations) =>
+            prevConversations.map((conv) =>
+                conv.id === currentConversationId
+                    ? { ...conv, messages: [...conv.messages, botMessage] }
+                    : conv
+            )
+        );
+
+        // Tạo biến theo dõi có nhận được token đầu tiên chưa
+        let hasReceivedFirstToken = false;
+
+        // Lấy tên hội thoại
+        const currentConv = conversations.find(
+            (conv) => conv.id === currentConversationId
+        );
+        const sessionName = currentConv
+            ? currentConv.name
+            : "Cuộc trò chuyện mới";
+
+        // Lấy thông tin người dùng
+        let userEmail = "guest";
+        let userName = "guest";
+        if (user) {
+            userEmail = user.emailAddress || "guest";
+            userName = user.displayName || "guest";
+        }
+
+        try {
+            // Kiểm tra nếu là chủ đề NGHI_PHEP, sử dụng API không stream
+            if (settings.aiTopic === "NGHI_PHEP") {
+                try {
+                    // Gọi API không stream
+                    const response = await callChatAPI(
+                        content,
+                        sessionName,
+                        settings.aiTopic,
+                        userEmail,
+                        isThinkModeActive, 
+                        [] // files
+                    );
+                    
+                    // Cập nhật nội dung tin nhắn bot
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg) =>
+                            msg.id === botMessageId
+                                ? { ...msg, content: response }
+                                : msg
+                        )
+                    );
+                    
+                    // Cập nhật tin nhắn trong conversations
+                    setConversations((prevConversations) =>
+                        prevConversations.map((conv) =>
+                            conv.id === currentConversationId
+                                ? {
+                                    ...conv,
+                                    messages: conv.messages.map((msg) =>
+                                        msg.id === botMessageId
+                                            ? { ...msg, content: response }
+                                            : msg
+                                    )
+                                }
+                                : conv
+                        )
+                    );
+                    
+                    // Đánh dấu đã nhận token đầu tiên để không hiển thị thông báo lỗi
+                    hasReceivedFirstToken = true;
+                    
+                } catch (error: any) {
+                    console.error("Lỗi khi gọi API không stream:", error);
+                    
+                    // Kiểm tra nếu là lỗi xác thực
+                    if (error.message.includes("token") || error.message.includes("Unauthorized") || error.message.includes("401")) {
+                        // Hiển thị modal phiên hết hạn
+                        setShowSessionExpired(true);
+                        
+                        // Cập nhật tin nhắn bot
+                        const errorMessage = "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.";
+                        updateBotMessage(botMessageId, errorMessage, currentConversationId);
+                    } else {
+                        // Cập nhật nội dung tin nhắn lỗi
+                        const errorMessage = `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại sau.`;
+                        updateBotMessage(botMessageId, errorMessage, currentConversationId);
+                    }
+                    
+                    // Đánh dấu đã nhận phản hồi (lỗi)
+                    hasReceivedFirstToken = true;
+                }
+                
+                // Kết thúc xử lý
                 setIsWaitingResponse(false);
                 return;
             }
-
-            // Tạo tin nhắn bot
-            const botMessage: Message = {
-                id: `msg-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                content: botResponse,
-                isUser: false,
-                timestamp: new Date(),
-            };
-
-            // Cập nhật tin nhắn
-            setMessages((prevMessages) => [...prevMessages, botMessage]);
-            setConversations((prevConversations) =>
-                prevConversations.map((conv) =>
-                    conv.id === currentConversationId
-                        ? { ...conv, messages: [...conv.messages, botMessage] }
-                        : conv
-                )
+            
+            // Gọi API stream cho các chủ đề khác
+            await callChatStreamAPI(
+                content,
+                sessionName,
+                settings.aiTopic,
+                userEmail,
+                userName,
+                isThinkModeActive,
+                [], // files
+                // Xử lý khi nhận token
+                (token) => {
+                    console.log("Received token:", token.length > 10 ? token.substring(0, 10) + "..." : token);
+                    
+                    // Đánh dấu đã nhận token đầu tiên
+                    hasReceivedFirstToken = true;
+                    
+                    // Cập nhật nội dung tin nhắn bot
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg) =>
+                            msg.id === botMessageId
+                                ? { ...msg, content: msg.content + token }
+                                : msg
+                        )
+                    );
+                    
+                    // Cập nhật tin nhắn trong conversations - chỉ làm điều này 
+                    // khi stream hoàn tất hoặc sau một số lượng token nhất định
+                    // để tránh cập nhật state quá nhiều lần
+                    if (token.includes("\n") || token.length > 10) {
+                        setConversations((prevConversations) =>
+                            prevConversations.map((conv) =>
+                                conv.id === currentConversationId
+                                    ? {
+                                        ...conv,
+                                        messages: conv.messages.map((msg) =>
+                                            msg.id === botMessageId
+                                                ? { ...msg, content: msg.content + token }
+                                                : msg
+                                        )
+                                    }
+                                    : conv
+                            )
+                        );
+                    }
+                },
+                // Xử lý khi stream hoàn thành
+                (tools) => {
+                    console.log("Stream completed, tools:", tools);
+                    
+                    // Nếu không nhận được token nào, thêm thông báo lỗi
+                    if (!hasReceivedFirstToken) {
+                        updateBotMessage(botMessageId, "Xin lỗi, tôi không thể tạo phản hồi lúc này. Vui lòng thử lại sau.", currentConversationId);
+                    } else {
+                        // Đảm bảo cập nhật conversations một lần cuối cùng với nội dung đầy đủ
+                        setMessages((prevMessages) => {
+                            // Lấy nội dung đầy đủ của tin nhắn bot
+                            const botMessageContent = prevMessages.find(msg => msg.id === botMessageId)?.content || "";
+                            
+                            setConversations((prevConversations) =>
+                                prevConversations.map((conv) =>
+                                    conv.id === currentConversationId
+                                        ? {
+                                            ...conv,
+                                            messages: conv.messages.map((msg) =>
+                                                msg.id === botMessageId
+                                                    ? { ...msg, content: botMessageContent }
+                                                    : msg
+                                            )
+                                        }
+                                        : conv
+                                )
+                            );
+                            
+                            return prevMessages;
+                        });
+                    }
+                    
+                    setIsWaitingResponse(false);
+                },
+                // Xử lý khi có lỗi
+                (error) => {
+                    console.error("Lỗi khi gọi API stream:", error);
+                    
+                    // Kiểm tra nếu là lỗi không hỗ trợ NGHI_PHEP
+                    if (error.message.includes("NGHI_PHEP") && error.message.includes("không được hỗ trợ")) {
+                        // Chuyển sang dùng API không stream và thử lại
+                        sendMessage(content);
+                        return;
+                    }
+                    
+                    // Kiểm tra nếu là lỗi xác thực
+                    if (error.message.includes("token") || error.message.includes("Unauthorized") || error.message.includes("401")) {
+                        // Hiển thị modal phiên hết hạn
+                        setShowSessionExpired(true);
+                        
+                        // Cập nhật tin nhắn bot
+                        updateBotMessage(botMessageId, "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.", currentConversationId);
+                    } else {
+                        // Cập nhật nội dung tin nhắn lỗi
+                        const errorMessage = `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại sau.`;
+                        updateBotMessage(botMessageId, errorMessage, currentConversationId);
+                    }
+                    
+                    // Đánh dấu đã nhận phản hồi (lỗi)
+                    hasReceivedFirstToken = true;
+                    setIsWaitingResponse(false);
+                }
             );
         } catch (error: any) {
-            // Tạo tin nhắn lỗi
-            const errorMessage: Message = {
-                id: `msg-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                content: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại sau.`,
-                isUser: false,
-                timestamp: new Date(),
-            };
-
-            // Cập nhật tin nhắn
-            setMessages((prevMessages) => [...prevMessages, errorMessage]);
-            setConversations((prevConversations) =>
-                prevConversations.map((conv) =>
-                    conv.id === currentConversationId
-                        ? {
-                              ...conv,
-                              messages: [...conv.messages, errorMessage],
-                          }
-                        : conv
-                )
-            );
-        } finally {
-            // Đặt lại trạng thái đợi phản hồi
+            // Xử lý lỗi tổng quát
+            console.error("Lỗi khi gọi API:", error);
+            
+            // Cập nhật nội dung tin nhắn lỗi
+            const errorMessage = `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại sau.`;
+            updateBotMessage(botMessageId, errorMessage, currentConversationId);
+            
+            // Đánh dấu đã nhận phản hồi (lỗi)
+            hasReceivedFirstToken = true;
             setIsWaitingResponse(false);
         }
     };
 
-    // Hàm gọi API chat
-    const callChatAPI = async (message: string) => {
-        try {
-            const apiUrl = "https://aiapi.hbc.com.vn/api/chat";
-            const accessToken = getCookie("access_token");
-            const refreshToken = getCookie("refresh_token");
-            if (!accessToken) {
-                throw new Error("Không tìm thấy access token");
-            }
-
-            // Lấy tên hội thoại
-            const currentConv = conversations.find(
-                (conv) => conv.id === activeConversation
-            );
-            const sessionName = currentConv
-                ? currentConv.name
-                : "Cuộc trò chuyện mới";
-
-            // Lấy thông tin người dùng
-            let userEmail = "guest";
-            let userName = "guest";
-            if (user) {
-                console.log(user);
-                userEmail = user.emailAddress || "guest";
-                userName = user.displayName || "guest";
-            }
-
-            // Chuẩn bị dữ liệu
-            const formData = new FormData();
-            formData.append("topic", settings.aiTopic);
-            formData.append("user_email", userEmail);
-            formData.append("user_name", userName);
-            formData.append("prompt", message);
-            formData.append("session_name", sessionName);
-            formData.append("refresh_token", refreshToken || "");
-            formData.append("mode", isThinkModeActive ? "think" : "normal");
-
-            // Gửi yêu cầu
-            const response = await fetch(apiUrl, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: formData,
-            });
-
-            // Xử lý lỗi 401
-            if (!response.ok) {
-                if (response.status === 401) {
-                    try {
-                        const newToken = await refreshAccessToken();
-                        const retryResponse = await fetch(apiUrl, {
-                            method: "POST",
-                            headers: {
-                                Authorization: `Bearer ${newToken}`,
-                            },
-                            body: formData,
-                        });
-
-                        if (!retryResponse.ok) {
-                            throw new Error(
-                                `Retry failed: ${retryResponse.status}`
-                            );
-                        }
-
-                        const retryData = await retryResponse.json();
-                        return (
-                            retryData.output ||
-                            JSON.stringify(retryData, null, 2)
-                        );
-                    } catch (refreshError) {
-                        alert("Vui lòng đăng nhập lại");
-                        redirectToLogin();
-                        return null;
+    // Hàm helper để cập nhật tin nhắn bot
+    const updateBotMessage = (botMessageId: string, content: string, conversationId: string) => {
+        setMessages((prevMessages) =>
+            prevMessages.map((msg) =>
+                msg.id === botMessageId
+                    ? { ...msg, content: content }
+                    : msg
+            )
+        );
+        
+        setConversations((prevConversations) =>
+            prevConversations.map((conv) =>
+                conv.id === conversationId
+                    ? {
+                        ...conv,
+                        messages: conv.messages.map((msg) =>
+                            msg.id === botMessageId
+                                ? { ...msg, content: content }
+                                : msg
+                        )
                     }
-                } else {
-                    throw new Error(`API error: ${response.status}`);
-                }
-            }
-
-            // Xử lý dữ liệu
-            const data = await response.json();
-            return data.output || JSON.stringify(data, null, 2);
-        } catch (error: any) {
-            console.error("Lỗi khi gọi API:", error);
-            if (error.message === "Không thể làm mới token") {
-                redirectToLogin();
-                return null;
-            }
-            return `Hiện đang có lỗi phía server: ${error.message}. Vui lòng thử lại sau.`;
-        }
+                    : conv
+            )
+        );
     };
 
     // Hàm tải lịch sử chat từ API
@@ -626,7 +745,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
             const accessToken = getCookie("access_token");
             if (!accessToken) {
-                resetConversations();
+                // Hiển thị modal phiên hết hạn thay vì reset conversations
+                setShowSessionExpired(true);
                 return;
             }
 
@@ -671,8 +791,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
                         const data = await retryResponse.json();
                         processSessionData(data);
                     } catch (refreshError) {
-                        alert("Vui lòng đăng nhập lại");
-                        redirectToLogin();
+                        // Hiển thị modal phiên hết hạn thay vì alert
+                        setShowSessionExpired(true);
                         return;
                     }
                 } else {
@@ -685,7 +805,15 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             }
         } catch (error) {
             console.error("Lỗi khi lấy lịch sử chat từ API:", error);
-            resetConversations();
+            // Nếu lỗi liên quan đến xác thực, hiển thị modal
+            if (error instanceof Error && 
+                (error.message.includes("token") || 
+                 error.message.includes("unauthorized") || 
+                 error.message.includes("Unauthorized"))) {
+                setShowSessionExpired(true);
+            } else {
+                resetConversations();
+            }
         }
     };
 
@@ -803,6 +931,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             }}
         >
             {children}
+            {showSessionExpired && <SessionExpiredModal />}
         </ChatContext.Provider>
     );
 };

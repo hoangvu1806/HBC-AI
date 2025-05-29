@@ -5,6 +5,9 @@ import logging
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 import os, sys
+import uuid
+import time
+from psycopg2 import pool
 
 # Thêm thư mục gốc vào sys.path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,6 +20,31 @@ from db_models import ChatSession, ChatMessage
 # Thiết lập logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Tạo global connection pool
+connection_pool = None
+
+def get_connection_pool(min_conn=2, max_conn=10, **db_config):
+    """
+    Tạo và trả về connection pool
+    """
+    global connection_pool
+    if connection_pool is None:
+        try:
+            connection_pool = psycopg2.pool.ThreadedConnectionPool(
+                minconn=min_conn,
+                maxconn=max_conn,
+                host=db_config.get("host", "localhost"),
+                port=db_config.get("port", 5432),
+                database=db_config.get("database", "chat_memory"),
+                user=db_config.get("user", "postgres"),
+                password=db_config.get("password", "postgres")
+            )
+            logger.info(f"Đã tạo connection pool PostgreSQL với min={min_conn}, max={max_conn}")
+        except Exception as e:
+            logger.error(f"Lỗi khi tạo connection pool: {e}")
+            raise
+    return connection_pool
 
 class PostgresRepository:
     def __init__(self, connection_params: Dict[str, Any]):
@@ -41,6 +69,51 @@ class PostgresRepository:
 
 
 class ChatSessionRepository(PostgresRepository):
+    def __init__(self, db_config: Dict[str, Any]):
+        """
+        Khởi tạo repository với cấu hình database
+        
+        Args:
+            db_config: Cấu hình kết nối database
+        """
+        super().__init__(db_config)
+        
+        # Khởi tạo connection pool nếu chưa có
+        self.pool = get_connection_pool(**db_config)
+        
+        # Tạo bảng nếu chưa tồn tại
+        self._create_table_if_not_exists()
+    
+    def _create_table_if_not_exists(self):
+        """Tạo bảng chat_sessions nếu chưa tồn tại"""
+        conn = None
+        try:
+            conn = self.pool.getconn()
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                CREATE TABLE IF NOT EXISTS chat_sessions (
+                    id VARCHAR(36) PRIMARY KEY,
+                    session_name VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    expertor VARCHAR(100) NOT NULL,
+                    original_name VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS idx_chat_sessions_email ON chat_sessions(email);
+                CREATE INDEX IF NOT EXISTS idx_chat_sessions_session_name ON chat_sessions(session_name);
+                """)
+                conn.commit()
+                logger.info("Đã kiểm tra/tạo bảng chat_sessions")
+        except Exception as e:
+            logger.error(f"Lỗi khi tạo bảng chat_sessions: {e}")
+            if conn:
+                conn.rollback()
+            raise
+        finally:
+            if conn:
+                self.pool.putconn(conn)
+
     def create_session(self, session: ChatSession) -> str:
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -225,43 +298,39 @@ class ChatSessionRepository(PostgresRepository):
         Returns:
             Danh sách các phiên chat
         """
-        conn = self.get_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        conn = None
         try:
-            logger.info(f"Đang lấy danh sách phiên chat cho email: {email}")
-            
-            cursor.execute(
-                """
-                SELECT * FROM chat_sessions 
-                WHERE email = %s
-                ORDER BY updated_at DESC
-                """,
-                (email,)
-            )
-            results = cursor.fetchall()
-            
-            sessions = []
-            for result in results:
-                metadata = json.loads(result["metadata"]) if result["metadata"] else None
-                session = ChatSession(
-                    id=result["id"],
-                    session_name=result["session_name"],
-                    email=result["email"],
-                    expertor=result["expertor"],
-                    original_name=result["original_name"],
-                    created_at=result["created_at"],
-                    updated_at=result["updated_at"],
-                    metadata=metadata
+            conn = self.pool.getconn()
+            with conn.cursor() as cursor:
+                logger.info(f"Đang lấy danh sách phiên chat cho email: {email}")
+                
+                cursor.execute(
+                    "SELECT id, session_name, email, expertor, original_name, created_at, updated_at FROM chat_sessions WHERE email = %s ORDER BY updated_at DESC",
+                    (email,)
                 )
-                sessions.append(session)
-            
-            logger.info(f"Đã tìm thấy {len(sessions)} phiên chat cho email: {email}")
-            return sessions
+                rows = cursor.fetchall()
+                
+                sessions = []
+                for row in rows:
+                    session = ChatSession(
+                        id=row[0],
+                        session_name=row[1],
+                        email=row[2],
+                        expertor=row[3],
+                        original_name=row[4],
+                        created_at=row[5],
+                        updated_at=row[6]
+                    )
+                    sessions.append(session)
+                
+                logger.info(f"Đã tìm thấy {len(sessions)} phiên chat cho email: {email}")
+                return sessions
         except Exception as e:
             logger.error(f"Lỗi khi lấy danh sách phiên chat: {e}")
             return []
         finally:
-            cursor.close()
+            if conn:
+                self.pool.putconn(conn)
 
     def delete_session(self, session_id: str) -> bool:
         """
@@ -273,43 +342,43 @@ class ChatSessionRepository(PostgresRepository):
         Returns:
             True nếu xóa thành công, False nếu thất bại
         """
-        conn = self.get_connection()
-        cursor = conn.cursor()
+        conn = None
         try:
+            conn = self.pool.getconn()
+            
             # Bắt đầu transaction
-            conn.autocommit = False
-            
-            # Xóa tất cả tin nhắn của phiên chat
-            cursor.execute(
-                "DELETE FROM chat_messages WHERE session_id = %s",
-                (session_id,)
-            )
-            message_count = cursor.rowcount
-            logger.info(f"Đã xóa {message_count} tin nhắn của phiên chat {session_id}")
-            
-            # Xóa phiên chat
-            cursor.execute(
-                "DELETE FROM chat_sessions WHERE id = %s",
-                (session_id,)
-            )
-            session_deleted = cursor.rowcount > 0
-            
-            # Commit nếu xóa thành công
-            if session_deleted:
-                conn.commit()
-                logger.info(f"Đã xóa phiên chat {session_id}")
-            else:
-                conn.rollback()
-                logger.warning(f"Không tìm thấy phiên chat {session_id} để xóa")
+            with conn:
+                with conn.cursor() as cursor:
+                    # Xóa tất cả tin nhắn của phiên chat
+                    cursor.execute(
+                        "DELETE FROM chat_messages WHERE session_id = %s",
+                        (session_id,)
+                    )
+                    message_count = cursor.rowcount
+                    logger.info(f"Đã xóa {message_count} tin nhắn của phiên chat {session_id}")
+                    
+                    # Xóa phiên chat
+                    cursor.execute(
+                        "DELETE FROM chat_sessions WHERE id = %s",
+                        (session_id,)
+                    )
+                    session_deleted = cursor.rowcount > 0
+                    
+                    # Commit nếu xóa thành công
+                    if session_deleted:
+                        conn.commit()
+                        logger.info(f"Đã xóa phiên chat {session_id}")
+                    else:
+                        conn.rollback()
+                        logger.warning(f"Không tìm thấy phiên chat {session_id} để xóa")
             
             return session_deleted
         except Exception as e:
-            conn.rollback()
             logger.error(f"Lỗi khi xóa phiên chat: {e}")
             return False
         finally:
-            conn.autocommit = True
-            cursor.close()
+            if conn:
+                self.pool.putconn(conn)
             
     def delete_session_by_name_and_email(self, session_name: str, email: str) -> bool:
         """
@@ -322,30 +391,76 @@ class ChatSessionRepository(PostgresRepository):
         Returns:
             True nếu xóa thành công, False nếu thất bại
         """
-        conn = self.get_connection()
-        cursor = conn.cursor()
+        conn = None
         try:
-            # Tìm phiên chat trước
-            cursor.execute(
-                "SELECT id FROM chat_sessions WHERE session_name = %s AND email = %s",
-                (session_name, email)
-            )
-            result = cursor.fetchone()
-            
-            if not result:
-                logger.warning(f"Không tìm thấy phiên chat với tên {session_name} và email {email}")
-                return False
+            conn = self.pool.getconn()
+            with conn.cursor() as cursor:
+                # Tìm phiên chat trước
+                cursor.execute(
+                    "SELECT id FROM chat_sessions WHERE session_name = %s AND email = %s",
+                    (session_name, email)
+                )
+                result = cursor.fetchone()
                 
-            session_id = result[0]
-            return self.delete_session(session_id)
+                if not result:
+                    logger.warning(f"Không tìm thấy phiên chat với tên {session_name} và email {email}")
+                    return False
+                    
+                session_id = result[0]
+                return self.delete_session(session_id)
         except Exception as e:
             logger.error(f"Lỗi khi tìm và xóa phiên chat: {e}")
             return False
         finally:
-            cursor.close()
+            if conn:
+                self.pool.putconn(conn)
 
 
 class ChatMessageRepository(PostgresRepository):
+    def __init__(self, db_config: Dict[str, Any]):
+        """
+        Khởi tạo repository với cấu hình database
+        
+        Args:
+            db_config: Cấu hình kết nối database
+        """
+        super().__init__(db_config)
+        
+        # Khởi tạo connection pool nếu chưa có
+        self.pool = get_connection_pool(**db_config)
+        
+        # Tạo bảng nếu chưa tồn tại
+        self._create_table_if_not_exists()
+    
+    def _create_table_if_not_exists(self):
+        """Tạo bảng chat_messages nếu chưa tồn tại"""
+        conn = None
+        try:
+            conn = self.pool.getconn()
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id VARCHAR(36) PRIMARY KEY,
+                    session_id VARCHAR(36) NOT NULL,
+                    role VARCHAR(50) NOT NULL,
+                    content TEXT NOT NULL,
+                    metadata JSONB,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON chat_messages(session_id);
+                """)
+                conn.commit()
+                logger.info("Đã kiểm tra/tạo bảng chat_messages")
+        except Exception as e:
+            logger.error(f"Lỗi khi tạo bảng chat_messages: {e}")
+            if conn:
+                conn.rollback()
+            raise
+        finally:
+            if conn:
+                self.pool.putconn(conn)
+    
     def create_message(self, message: ChatMessage) -> str:
         conn = self.get_connection()
         cursor = conn.cursor()

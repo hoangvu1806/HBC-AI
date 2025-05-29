@@ -71,6 +71,10 @@ const Message = ({
     const isLastMessage =
         messages.length > 0 && messages[messages.length - 1].id === id;
     const showTypingIndicator = isWaitingResponse && isLastMessage && isUser;
+    
+    // Kiểm tra xem có hiển thị hiệu ứng chờ khi bot chưa trả lời hoặc tin nhắn trống
+    const isEmptyBotMessage = !isUser && content === '' && isWaitingResponse;
+    const showStreamWaitingIndicator = isEmptyBotMessage;
 
     useEffect(() => {
         // Apply syntax highlighting to code blocks
@@ -262,11 +266,20 @@ const Message = ({
                             ref={markdownRef}
                             className={`${markdownStyles.markdownContent} ${
                                 hasFiles ? markdownStyles.hasFiles : ""
-                            }`}
+                            } ${content.includes("Phiên làm việc đã hết hạn") ? styles.sessionExpiredMessage : ""}`}
                             dangerouslySetInnerHTML={{
-                                __html: marked.parse(content),
+                                __html: content ? marked.parse(content) : '',
                             }}
                         />
+                    )}
+
+                    {/* Hiển thị hiệu ứng đợi stream nếu tin nhắn bot trống */}
+                    {showStreamWaitingIndicator && (
+                        <div className={styles.typingIndicator}>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
                     )}
 
                     {showOptions && (

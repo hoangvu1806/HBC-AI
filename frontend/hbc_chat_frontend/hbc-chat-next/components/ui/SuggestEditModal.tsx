@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import { FiEdit3, FiMessageSquare } from "react-icons/fi";
+import { getCookie } from "@/lib/api";
+import { useChat } from "@/contexts/ChatContext";
 
 interface SuggestEditModalProps {
     isOpen: boolean;
@@ -21,7 +23,7 @@ const SuggestEditModal: React.FC<SuggestEditModalProps> = ({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [suggestedContent, setSuggestedContent] = useState("");
     const [isClosing, setIsClosing] = useState(false);
-    const [highlightChanges, setHighlightChanges] = useState(false);
+    const { loadChatHistoryFromAPI } = useChat();
 
     // Thiết lập nội dung ban đầu là nội dung cũ khi modal mở
     useEffect(() => {
@@ -78,15 +80,6 @@ const SuggestEditModal: React.FC<SuggestEditModalProps> = ({
         };
     }, [isOpen, onCancel]);
 
-    // Hàm lấy cookie
-    const getCookie = (name: string): string | null => {
-        if (typeof document === "undefined") return null;
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-        return null;
-    };
-
     const handleSubmit = async () => {
         if (suggestedContent.trim()) {
             try {
@@ -124,7 +117,11 @@ const SuggestEditModal: React.FC<SuggestEditModalProps> = ({
                 // Lấy token xác thực
                 const accessToken = getCookie("access_token");
                 if (!accessToken) {
-                    throw new Error("Không tìm thấy access token");
+                    // Gọi loadChatHistoryFromAPI để kích hoạt kiểm tra xác thực và hiển thị modal phiên hết hạn
+                    await loadChatHistoryFromAPI();
+                    // Đóng modal sau khi phát hiện lỗi xác thực
+                    closeWithAnimation();
+                    return;
                 }
 
                 // Chuẩn bị dữ liệu feedback
@@ -199,12 +196,23 @@ const SuggestEditModal: React.FC<SuggestEditModalProps> = ({
                 }, 300);
             } catch (error: any) {
                 console.error("Lỗi khi gửi feedback:", error);
-                // Hiển thị thông báo lỗi
-                alert(
-                    `Có lỗi xảy ra khi gửi đề xuất: ${
-                        error.message || "Lỗi không xác định"
-                    }`
-                );
+                
+                // Kiểm tra lỗi xác thực
+                if (error.message && (
+                    error.message.includes("token") || 
+                    error.message.includes("Unauthorized") || 
+                    error.message.includes("401"))) {
+                    // Gọi loadChatHistoryFromAPI để kích hoạt kiểm tra xác thực và hiển thị modal phiên hết hạn
+                    await loadChatHistoryFromAPI();
+                } else {
+                    // Hiển thị thông báo lỗi cho các lỗi khác
+                    alert(
+                        `Có lỗi xảy ra khi gửi đề xuất: ${
+                            error.message || "Lỗi không xác định"
+                        }`
+                    );
+                }
+                
                 // Vẫn đóng modal
                 closeWithAnimation();
             }
@@ -251,24 +259,6 @@ const SuggestEditModal: React.FC<SuggestEditModalProps> = ({
                     <div className="suggest-edit-input">
                         <h3>
                             <FiEdit3 className="edit-icon" />
-                            Chỉnh sửa phản hồi:
-                            <div className="toggle-highlight">
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={highlightChanges}
-                                        onChange={() =>
-                                            setHighlightChanges(
-                                                !highlightChanges
-                                            )
-                                        }
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                                <span className="toggle-label">
-                                    Đánh dấu thay đổi
-                                </span>
-                            </div>
                         </h3>
                         <div
                             className={`textarea-wrapper ${
@@ -283,14 +273,8 @@ const SuggestEditModal: React.FC<SuggestEditModalProps> = ({
                                 }
                                 placeholder="Chỉnh sửa nội dung phản hồi..."
                                 rows={12}
-                                className={
-                                    highlightChanges && hasChanged
-                                        ? "highlight-changes"
-                                        : ""
-                                }
-                                data-original-content={
-                                    highlightChanges ? originalContent : ""
-                                }
+                                className=""
+                                data-original-content=""
                             />
 
                             {hasChanged && (

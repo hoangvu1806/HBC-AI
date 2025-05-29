@@ -105,7 +105,7 @@ const Settings = ({
                                 }
                             >
                                 <option value="HCNS">HCNS</option>
-                                <option value="NGHI_PHEP">Hỗ trợ nghỉ phép</option>
+                                {/* <option value="NGHI_PHEP">Hỗ trợ nghỉ phép</option> */}
                                 {/* <option value="IT">IT</option>
                                 <option value="KT">Kế toán</option>
                                 <option value="KINH_DOANH">Kinh doanh</option>
